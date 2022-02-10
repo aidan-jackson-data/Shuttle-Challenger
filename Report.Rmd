@@ -1,6 +1,6 @@
 ---
-title: "W271 Group Lab 1"
-subtitle: 'Due 11:59pm Pacific Time Sunday Sep 12 2021'
+title: "Space Shuttle Safety and the *Challenger*"
+subtitle: "Statistical Modeling & Real World Impact"
 author : "Aidan Jackson, Sandip Panesar, Devesh Khandelwal"
 output: 
   pdf_document:
@@ -10,47 +10,13 @@ fontsize: 11pt
 geometry: margin=1in
 ---
 
-## Instructions (Please Read Carefully):
-
-* 20 page limit (strict)
-
-* Submit by the due date. **Late submissions will not be accepted.**
-
-* Do not modify fontsize, margin or line_spacing settings
-
-* One student from each group should submit the lab to their student github repo by the deadline; submission and revisions made after the deadline will not be graded
-
-* Answers should clearly explain your reasoning; do not simply 'output dump' the results of code without explanation 
-
-* Submit two files:
-    
-    1. A pdf file that details your answers. Include all R code used to produce the answers. Do not suppress the code in your pdf file
-    
-    2. The R markdown (Rmd) file used to produce the pdf file. Knit to pdf, **do not knit to html and save as pdf**
-  
-    The assignment will not be graded unless **both** files are submitted
-    
-      
-* Name your files to include all group members names. For example the students' names are Stan Cartman and Kenny Kyle, name your files as follows:
-
-    * `StanCartman_KennyKyle_Lab1.Rmd`
-    * `StanCartman_KennyKyle_Lab1.pdf`
-            
-* Although it sounds obvious, please write your name on page 1 of your pdf and Rmd files
-
-* All answers should include a detailed narrative; make sure that your audience can easily follow the logic of your analysis. All steps used in modeling must be clearly shown and explained
-
-* For statistical methods that we cover in this course, use the R libraries and functions that are covered in this course. If you use libraries and functions for statistical modeling that we have not covered, you must provide an explanation of why such libraries and functions are used and reference the library documentation. For data wrangling and data visualization, you are free to use other libraries, such as dplyr, ggplot2, etc
-
-* For mathematical formulas, type them in your R markdown file. Do not e.g. write them on a piece of paper, snap a photo, and use the image file
-
-* Incorrectly following submission instructions results in deduction of grades
-
-* Students are expected to act with regard to UC Berkeley Academic Integrity.
-
 \newpage
 
-# Investigation of the 1989 Space Shuttle Challenger Accident 
+# Investigation of the 1986 Space Shuttle *Challenger* Accident 
+
+This exercise examines the Space Shuttle *Challenger*'s infamous 1986 launch using only the previous track record of the Space Shuttle Program. Specifically, counts of previous O-ring failures at various launch temperatures are modeled to predict the probability of a catastrophic failure occurring on the morning of the launch. It is found that the probability of a catastrophic failure occurring for the *Challenger* launch is XX%, over XX times higher than the original estimate. This comes from XX
+
+This work was originally completed as part of the W271 Statistical Methods for Discrete Response, Time Series, and Panel Data course in the Master of Information and Data Science program at University of California, Berkeley. The exercise in turn was based on a previous 1989 paper on the same topic, originally published in the Journal of the American Statistical Association and included in this repo as a pdf.$^{[1]}$
 
 Carefully read the Dalal et al (1989) paper (Skip Section 5).
 
@@ -536,6 +502,12 @@ of atmospheric temperature on the day of the launch, and that lower temperatures
 On the day of the launch the temperature was 31°F. At this point, the predicted the probability of any O-ring failure is `r exp(beta_0_hat + beta_1_hat*31 )/(1 + exp(beta_0_hat + beta_1_hat*31 ))`, with a 95 % confidence interval (LRT) as `r interval$lower` and `r interval$upper`.
 
 Therefore, with the 95% confidence interval so high, at least one O-ring is very likely to fail under these conditions. If this was known, the launch could have been postponed for warmer weather when there was a lower probability of a failure. We can conclude that the catastrophe could have been avoided had NASA managers appropriately analyzed the data by factoring in both the successful and failed launches. 
+
+\newpage
+
+Citation:
+
+[1] Dalal, Siddhartha R., et al. “Risk Analysis of the Space Shuttle: Pre-Challenger Prediction of Failure.” Journal of the American Statistical Association, vol. 84, no. 408, [American Statistical Association, Taylor & Francis, Ltd.], 1989, pp. 945–57, https://doi.org/10.2307/2290069.
 
 
 
