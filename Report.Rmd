@@ -1,6 +1,6 @@
 ---
 title: "Space Shuttle Safety and the *Challenger*"
-subtitle: "Statistical Modeling & Real World Impact"
+subtitle: "Statistical Modeling for Critical Decisions"
 author : "Aidan Jackson, Sandip Panesar, Devesh Khandelwal"
 output: 
   pdf_document:
@@ -14,9 +14,27 @@ geometry: margin=1in
 
 # Investigation of the 1986 Space Shuttle *Challenger* Accident 
 
-This exercise examines the Space Shuttle *Challenger*'s infamous 1986 launch using only the previous track record of the Space Shuttle Program. Specifically, counts of previous O-ring failures at various launch temperatures are modeled to predict the probability of a catastrophic failure occurring on the morning of the launch. It is found that the probability of a catastrophic failure occurring for the *Challenger* launch is XX%, over XX times higher than the original estimate. This comes from XX
+## Summary
+
+This exercise examines the Space Shuttle *Challenger*'s infamous 1986 disaster using the previous track record of the Space Shuttle Program. Specifically, counts of O-ring failures at various launch temperatures are modeled to predict the probability of a catastrophic failure occurring on the morning of the disaster. It is found that the probability of a catastrophic failure occurring for the launch is XX%, over XX times higher than the original estimate. The Rogers Commission, tasked with investigating the accident, noted that this underestimate occurred due to omitting launch data where no O-ring damage was found.$^{[2]}$ The original estimate was provided by [Morton Thiokol](https://en.wikipedia.org/wiki/Thiokol), a contractor to NASA and producer of the O-ring involved component that failed. 
 
 This work was originally completed as part of the W271 Statistical Methods for Discrete Response, Time Series, and Panel Data course in the Master of Information and Data Science program at University of California, Berkeley. The exercise in turn was based on a previous 1989 paper on the same topic, originally published in the Journal of the American Statistical Association and included in this repo as a pdf.$^{[1]}$
+
+## Background
+
+On January 28th, 1986, the *Challenger* launched from Cape Canaveral, Florida, for what was the 25th orbital mission of the Space Shuttle program. 59 seconds after launch, a tracking camera recorded a burning plume coming out of the side of the right solid rocket booster (SRB). As the leaking fuel continued to burn, gradually other parts of the shuttle stack began to disintegrate. 73 seconds after launch, still visible in the sky, the shuttle exploded as different fuel sources ignited. This was particularly shocking both for being the first American astronaut deaths in a launch mission^[Apollo 1 resulted in 3 astronaut deaths during pre-launch training on the ground. Soyuz 1 and 11 resulted in a combined 4 cosmonaut deaths due to hardware failures during each launch mission.], as well as its public broadcasting as part of the inaugural [Teacher in Space Project](https://en.wikipedia.org/wiki/Teacher_in_Space_Project). 
+
+In the ensuing investigation, the cause of the accident was found to be O-ring failure in the original right SRB.$^{[2]}$ O-rings are doughnut-shaped and commonly made of rubber, and provide a flexible seal between mechanical components. In a typical car engine, O-rings have diameters on the scale of inches. Inside the Space Shuttles' SRBs, O-ring diameter was 37.5 feet.$^{[1]}$ 
+
+Like many other applications, the SRBs' O-rings sealed against gas to prevent it from escaping where mechanical joints connected. Every Shuttle launch required 2 SRBs, with each SRB containing 3 joints that used O-ring seals. For redundancy, each seal had both a primary and a secondary O-ring. This resulted in 6 O-rings total per SRB, or 12 O-rings total per launch. 
+
+Redundancy is needed because of the potential for an O-ring to fail during operation. There are two mechanisms which could cause this, known as erosion and blow by. Erosion has the potential to occur during normal operation, where hot gases sealed against the O-ring gradually disintegrate it. On the SRBs, putty was added to the O-rings to provide a protective barrier against this mechanism. Blow by occurs when an O-ring already fails to provide a complete seal, allowing high velocity gas moving past the O-ring to damage it even further. 
+
+Being made of rubber-like material, there are a variety of conditions which may impact the ability of any general O-ring to provide a complete seal. One which was investigated for the Space Shuttle program was temperature, where colder conditions can cause an O-ring to shrink and lose its elasticity. During the late 1970s and early 1980s, the SRB engine with the O-rings was qualified for temperatures as low as 40°F.
+
+Without any additional statistics, when the Challenger started its Winter morning launch it was 32°F.
+
+## Exploratory Data Analysis
 
 Carefully read the Dalal et al (1989) paper (Skip Section 5).
 
@@ -508,6 +526,8 @@ Therefore, with the 95% confidence interval so high, at least one O-ring is very
 Citation:
 
 [1] Dalal, Siddhartha R., et al. “Risk Analysis of the Space Shuttle: Pre-Challenger Prediction of Failure.” Journal of the American Statistical Association, vol. 84, no. 408, [American Statistical Association, Taylor & Francis, Ltd.], 1989, pp. 945–57, https://doi.org/10.2307/2290069.
+
+[2] Presidential Commission on the Space Shuttle *Challenger* Accident (1986), *Report of the Presidential Commission on the Space Shuttle Challenger Accident* (Vols. 1 & 2), Washington, D.C.: Author. 
 
 
 
