@@ -8,6 +8,7 @@ output:
   number_sections: true
 fontsize: 11pt
 geometry: margin=1in
+urlcolor: blue
 ---
 
 \newpage
@@ -16,7 +17,7 @@ geometry: margin=1in
 
 ## Summary
 
-This exercise examines the Space Shuttle *Challenger*'s infamous 1986 disaster using the previous track record of the Space Shuttle Program. Specifically, counts of O-ring failures at various launch temperatures are modeled to predict the probability of a catastrophic failure occurring on the morning of the disaster. It is found that the probability of a catastrophic failure occurring for the launch is XX%, over XX times higher than the original estimate. The Rogers Commission, tasked with investigating the accident, noted that this underestimate occurred due to omitting launch data where no O-ring damage was found.$^{[2]}$ The original estimate was provided by [Morton Thiokol](https://en.wikipedia.org/wiki/Thiokol), a contractor to NASA and producer of the O-ring involved component that failed. 
+This exercise examines the Space Shuttle *Challenger*'s 1986 disaster using the previous safety record of the Space Shuttle Program. Specifically, counts of O-ring failures at various launch temperatures are modeled to predict the probability of a catastrophic failure occurring on the morning of the disaster. It is found that the probability of a catastrophic failure is XX%, over XX times higher than the original estimate. The Rogers Commission, tasked with investigating the accident, noted that this underestimate occurred due to omitting launch data where no O-ring damage was found.$^{[2]}$ The original estimate was provided by [Morton Thiokol](https://en.wikipedia.org/wiki/Thiokol), a contractor to NASA and producer of the O-ring involved component that failed. 
 
 This work was originally completed as part of the W271 Statistical Methods for Discrete Response, Time Series, and Panel Data course in the Master of Information and Data Science program at University of California, Berkeley. The exercise in turn was based on a previous 1989 paper on the same topic, originally published in the Journal of the American Statistical Association and included in this repo as a pdf.$^{[1]}$
 
@@ -24,19 +25,19 @@ This work was originally completed as part of the W271 Statistical Methods for D
 
 On January 28th, 1986, the *Challenger* launched from Cape Canaveral, Florida, for what was the 25th orbital mission of the Space Shuttle program. 59 seconds after launch, a tracking camera recorded a burning plume coming out of the side of the right solid rocket booster (SRB). As the leaking fuel continued to burn, gradually other parts of the shuttle stack began to disintegrate. 73 seconds after launch, still visible in the sky, the shuttle exploded as different fuel sources ignited. This was particularly shocking both for being the first American astronaut deaths in a launch mission^[Apollo 1 resulted in 3 astronaut deaths during pre-launch training on the ground. Soyuz 1 and 11 resulted in a combined 4 cosmonaut deaths due to hardware failures during each launch mission.], as well as its public broadcasting as part of the inaugural [Teacher in Space Project](https://en.wikipedia.org/wiki/Teacher_in_Space_Project). 
 
-In the ensuing investigation, the cause of the accident was found to be O-ring failure in the original right SRB.$^{[2]}$ O-rings are doughnut-shaped and commonly made of rubber, and provide a flexible seal between mechanical components. In a typical car engine, O-rings have diameters on the scale of inches. Inside the Space Shuttles' SRBs, O-ring diameter was 37.5 feet.$^{[1]}$ 
+In the ensuing investigation, the cause of the accident was found to be O-ring failure in the same right SRB.$^{[2]}$ O-rings are doughnut-shaped and commonly made of rubber, and provide a flexible seal between mechanical components. In a typical car engine, O-rings have diameters on the scale of inches. Inside the Space Shuttles' SRBs, O-ring diameter was 37.5 feet.$^{[1]}$ 
 
 Like many other applications, the SRBs' O-rings sealed against gas to prevent it from escaping where mechanical joints connected. Every Shuttle launch required 2 SRBs, with each SRB containing 3 joints that used O-ring seals. For redundancy, each seal had both a primary and a secondary O-ring. This resulted in 6 O-rings total per SRB, or 12 O-rings total per launch. 
 
-Redundancy is needed because of the potential for an O-ring to fail during operation. There are two mechanisms which could cause this, known as erosion and blow by. Erosion has the potential to occur during normal operation, where hot gases sealed against the O-ring gradually disintegrate it. On the SRBs, putty was added to the O-rings to provide a protective barrier against this mechanism. Blow by occurs when an O-ring already fails to provide a complete seal, allowing high velocity gas moving past the O-ring to damage it even further. 
+Redundancy is needed because of the potential for an O-ring to fail during operation. There are two mechanisms which could cause this, known as erosion and blow by. Erosion has the potential to occur during normal operation, where hot gases sealed against the O-ring gradually disintegrate it. On the SRBs, putty was added to provide a protective barrier against this mechanism. Blow by occurs when an O-ring already fails to provide a complete seal, allowing high velocity gas to move past the O-ring and damage it further. 
 
-Being made of rubber-like material, there are a variety of conditions which may impact the ability of any general O-ring to provide a complete seal. One which was investigated for the Space Shuttle program was temperature, where colder conditions can cause an O-ring to shrink and lose its elasticity. During the late 1970s and early 1980s, the SRB engine with the O-rings was qualified for temperatures as low as 40°F.
+Being made of rubber-like material, there are a variety of conditions which may impact the ability of any O-ring to provide a complete seal. One which was investigated for the Space Shuttle program was temperature, where colder conditions can cause an O-ring to shrink and lose its elasticity. During the late 1970s and early 1980s, the SRB engine with the O-rings was qualified for temperatures as low as 40°F.
 
 Without any additional statistics, when the Challenger started its Winter morning launch it was 32°F.
 
 ## Exploratory Data Analysis
 
-Carefully read the Dalal et al (1989) paper (Skip Section 5).
+As with any dataset, understanding what information is available is a prerequisite to deciding on what value to extract from it. Although the size of this dataset is small, with only 23 observations from previous Shuttle launches, the choice of how to treat it was a contributing factor to underestimating the *Challenger*'s risk.
 
 ```{r, include=FALSE}
 options(tinytex.verbose = TRUE)
@@ -61,7 +62,7 @@ d <- data.table(d)
 
 With the data loaded, it can be seen that there are `r length(d)` variables and `r nrow(d)` observations. Between these, there are `r sum(is.na(d))` missing values. In total there is a small amount of information available, which is to be expected with rare events such as space shuttle launches. However, it will also provide more opportunities for intimate examination of the variables and their trends.
 
-Based on the information in the accompanying paper, the meaning of each variable can be understood. `Flight` represents a generic index for each launch entry. `O.ring` represents the number of primary field O-rings which experienced a "thermal distress" event for each flight. Each shuttle has six primary field O-rings in total, which is shown by the variable `Number`. `Temp` and `Pressure` represent the O-ring launch temperature in Fahrenheit and pressure in psi respectively. With each of these variables well defined, it can be seen that none are top or bottom coded to censor certain specific values.
+Based on the information in the accompanying paper, the meaning of each variable can be understood. `Flight` represents a generic index for each launch entry. `O.ring` represents the number of primary field O-rings which experienced a "thermal distress" event for each flight. Each shuttle has six primary field O-rings in total, which is shown by the variable `Number`. `Temp` and `Pressure` represent the O-ring launch temperature in Fahrenheit and pressure in psi respectively. 
 
 Because the total number of O-rings for each launch is constant at 6, it will not be used further. Instead, the O-ring variable will be examined to start.
 
@@ -204,12 +205,15 @@ Continuing Exercise 4, consider the simplified model $logit(\pi) = \beta_0 +  \b
 Above, we demonstrated that a model including the `Pressure` variable did not offer significantly more information compared to a model with only temperature as the dependent variable. 
 
 ```{r}
+# Repeat with binomial model
+# binomial_model <- glm(formula = distress/Number ~ Temp, data = d , family = binomial(link = logit))
+# This is the binary model
 fail_model <- glm(formula = distress ~ Temp, data = d , 
                   family = binomial(link = logit))
 se <- sqrt(diag(vcov(fail_model)))
 ```
 
-In this model, an increase in the temperature by 1 degree Farenheit will cause a `r round(as.numeric(fail_model$coefficients[2]), 3)` decrease in the log-odds of an O-ring failure event. This coefficient value is associated with a standard error of `r round(as.numeric(se[2]), 3)`, which is significant at the 95% level. This demonstrates that `Temp` is a significant variable for predicting the outcome. 
+In this model, an increase in the temperature by 1 degree Fahrenheit will cause a `r round(as.numeric(fail_model$coefficients[2]), 3)` decrease in the log-odds of an O-ring failure event. This coefficient value is associated with a standard error of `r round(as.numeric(se[2]), 3)`, which is significant at the 95% level. This demonstrates that `Temp` is a significant variable for predicting the outcome. 
 
 (b) Construct two plots: (1) $\pi$ vs. Temp and (2) Expected number of failures vs. Temp. Use a temperature range of 31° to 81° on the x-axis even though the minimum temperature in the data set was 53°.
 
@@ -233,9 +237,9 @@ temp_ses <- temp_prob$se.fit
 alpha <- .05
 
 #2.5th %ile
-lower_ci <- temp_pis - qnorm( p = 1-alpha/2)*temp_prob$se
+lower_ci <- temp_pis - qnorm(p = 1-alpha/2)*temp_prob$se
 #97.5th %ile
-upper_ci <- temp_pis + qnorm( p = 1-alpha/2)*temp_prob$se
+upper_ci <- temp_pis + qnorm(p = 1-alpha/2)*temp_prob$se
 
 final_temp <- data.frame(temps$Temp, temp_pis, lower_ci, upper_ci)
 colnames(final_temp) <- c('temp', 'pi', 'lwr', 'upr')
@@ -278,7 +282,7 @@ Next, the expected number of failures as a function of temperature can be calcul
 # This function calculates the maximum number of failures at a specified probability of a single failure
 get_ring_failure <- function(est_prob){
   # This function is from the paper Dalal et al.
-  mu = 6.0*(1-(1-est_prob)^(1/6))
+  mu = 6.0*est_prob
   return(mu)
 }
 ```
@@ -376,11 +380,23 @@ vector_lower_ci2 <- NA
 vector_upper_ci2 <- NA
 
 suppressWarnings(for(i in 1:1000) {
-  #generating data from repeated sampling
-  d_bootstrap <- sample_n(d, size=23, replace=TRUE)
-  #modeling
-  model <- glm(formula = distress ~ Temp, data = d_bootstrap, 
-               family = binomial(link = logit))
+  
+  # generating data from repeated sampling, only temperature will be used
+  bootstrap_temps <- sample_n(d, size=23, replace=TRUE)$Temp
+  
+  # make predictions on data with original model
+  bootstrap_outcomes <- predict(object = fail_model, data = bootstrap_temps, 
+                                type = "response", family = binomial(link = "logit"))
+  
+  # put bootstrap data together for fitting new model
+  bootstrap_d <- data.frame("Temp" = bootstrap_temps, 
+                            "distress" = bootstrap_outcomes)
+  
+  # fit new model using bootstrapped data
+  model <- glm(formula = distress ~ Temp, 
+               data = bootstrap_d, family = binomial(link = logit))
+  
+  # make predictions using bootstrap model at temperatures of interest
   prediction_1 <- predict(object=model, 
                           newdata=bs_data_1, type='response', se=TRUE)
   vector_pi[i] <- prediction_1$fit
