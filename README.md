@@ -11,9 +11,8 @@ This was originally part of the W271 Statistical Methods for Discrete Response, 
 | Report.pdf      | Report and statistical analysis       |
 | Report.Rmd   | R Markdown file generating the PDF        |
 | challenger.csv | Data on Space Shuttle flights prior to *Challenger*'s final mission* |
-| Dalal_et_al_1989.pdf | Original publication this exercise is based on |
 
-\*The primary dataset contains observations on O-Ring condition, the determined cause of the Challenger disaster, for [23/24](https://en.wikipedia.org/wiki/List_of_Space_Shuttle_missions#Launches_and_orbital_flights) orbital flights of the Space Shuttle program prior to the *Challenger* disaster. [STS-4](https://en.wikipedia.org/wiki/STS-4) resulted in loss at sea of the solid rocket boosters where the O-rings are located, and was omitted from the dataset.
+\*The primary dataset contains observations on O-Ring condition, the determined cause of the Challenger disaster, for [23/24](https://en.wikipedia.org/wiki/List_of_Space_Shuttle_missions#Launches_and_orbital_flights) orbital flights of the Space Shuttle program prior to launch. [STS-4](https://en.wikipedia.org/wiki/STS-4) resulted in loss at sea of the solid rocket boosters where the O-rings are located, and was omitted from the dataset.
 
 Citation:
 
