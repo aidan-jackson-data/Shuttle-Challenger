@@ -17,7 +17,7 @@ urlcolor: blue
 
 ## Summary
 
-This exercise examines the Space Shuttle *Challenger*'s 1986 disaster using the previous safety record of the Space Shuttle Program. Specifically, counts of O-ring failures at various launch temperatures are modeled to predict the probability of a catastrophic failure occurring on the morning of the disaster. It is found that the probability of a catastrophic failure is XX%, over XX times higher than the original estimate. The Rogers Commission, tasked with investigating the accident, noted that this underestimate occurred due to omitting launch data where no O-ring damage was found.$^{[2]}$ The original estimate was provided by [Morton Thiokol](https://en.wikipedia.org/wiki/Thiokol), a contractor to NASA and producer of the O-ring involved component that failed. 
+This exercise examines the Space Shuttle *Challenger*'s 1986 disaster using the previous safety record of the Space Shuttle Program. The probability of O-ring failures at various launch temperatures are modeled to make a prediction for the conditions on the morning of the disaster. It is found that the probability of a catastrophic failure is XX%, over XX times higher than when using the methods of the original estimate. The Rogers Commission, tasked with investigating the accident, noted that this underestimate occurred due to omitting launch data where no O-ring damage was found.$^{[2]}$ The original estimate procedure was used by [Morton Thiokol](https://en.wikipedia.org/wiki/Thiokol), a contractor to NASA and producer of the O-ring involved component that failed. 
 
 This work was originally completed as part of the W271 Statistical Methods for Discrete Response, Time Series, and Panel Data course in the Master of Information and Data Science program at University of California, Berkeley. The exercise in turn was based on a previous 1989 paper on the same topic, originally published in the Journal of the American Statistical Association and included in this repo as a pdf.$^{[1]}$
 
@@ -25,29 +25,25 @@ This work was originally completed as part of the W271 Statistical Methods for D
 
 On January 28th, 1986, the *Challenger* launched from Cape Canaveral, Florida, for what was the 25th orbital mission of the Space Shuttle program. 59 seconds after launch, a tracking camera recorded a burning plume coming out of the side of the right solid rocket booster (SRB). As the leaking fuel continued to burn, gradually other parts of the shuttle stack began to disintegrate. 73 seconds after launch, still visible in the sky, the shuttle exploded as different fuel sources ignited. This was particularly shocking both for being the first American astronaut deaths in a launch mission^[Apollo 1 resulted in 3 astronaut deaths during pre-launch training on the ground. Soyuz 1 and 11 resulted in a combined 4 cosmonaut deaths due to hardware failures during each launch mission.], as well as its public broadcasting as part of the inaugural [Teacher in Space Project](https://en.wikipedia.org/wiki/Teacher_in_Space_Project). 
 
-In the ensuing investigation, the cause of the accident was found to be O-ring failure in the same right SRB.$^{[2]}$ O-rings are doughnut-shaped and commonly made of rubber, and provide a flexible seal between mechanical components. In a typical car engine, O-rings have diameters on the scale of inches. Inside the Space Shuttles' SRBs, O-ring diameter was 37.5 feet.$^{[1]}$ 
+In the ensuing investigation, the cause of the accident was found to be O-ring failure in the field-joint of the same right SRB.$^{[2]}$ O-rings are doughnut-shaped and commonly made of rubber, and provide a flexible seal between mechanical components. In a typical car engine, O-rings have diameters on the scale of inches. Inside the Space Shuttles' SRBs, O-ring diameter was 37.5 feet.$^{[1]}$ 
 
-Like many other applications, the SRBs' O-rings sealed against gas to prevent it from escaping where mechanical joints connected. Every Shuttle launch required 2 SRBs, with each SRB containing 3 joints that used O-ring seals. For redundancy, each seal had both a primary and a secondary O-ring. This resulted in 6 O-rings total per SRB, or 12 O-rings total per launch. 
+Like many other applications, the SRBs' O-rings sealed against gas to prevent it from escaping where mechanical joints connected. Every Shuttle launch required 2 SRBs, with each SRB containing 3 field-joints that used O-ring seals. For redundancy, each field-joint had both a primary and a secondary O-ring. This resulted in 6 field-joint O-rings total per SRB, or 12 field-joint O-rings total per launch. 
 
-Redundancy is needed because of the potential for an O-ring to fail during operation. There are two mechanisms which could cause this, known as erosion and blow by. Erosion has the potential to occur during normal operation, where hot gases sealed against the O-ring gradually disintegrate it. On the SRBs, putty was added to provide a protective barrier against this mechanism. Blow by occurs when an O-ring already fails to provide a complete seal, allowing high velocity gas to move past the O-ring and damage it further. 
+Redundancy is needed because of the potential for an O-ring to fail. There are two mechanisms which could cause this, known as erosion and blow by. Erosion has the potential to occur during normal operation, where hot gases sealed against the O-ring gradually disintegrate it. On the SRBs, putty was added to provide a protective barrier against this mechanism. Blow by occurs when an O-ring already fails to provide a complete seal, allowing high velocity gas to move past the O-ring and damage it further. 
 
-Being made of rubber-like material, there are a variety of conditions which may impact the ability of any O-ring to provide a complete seal. One which was investigated for the Space Shuttle program was temperature, where colder conditions can cause an O-ring to shrink and lose its elasticity. During the late 1970s and early 1980s, the SRB engine with the O-rings was qualified for temperatures as low as 40°F.
+Although the secondary O-rings were a backup should distress and failure occur in a primary O-ring, before the first ever Space Shuttle launch it was discovered that additional problems could also occur. This was due to field-joint design which sometimes caused unintended rotation among different components, including the O-rings. While the primary O-rings would engage a seal reliably even with this rotation, the secondary O-rings specifically could sometimes slip and leave permanent space for gas leakage. If this occurred during a launch where the primary O-ring failed due to the previous distresses, then it was known the result would be a "catastrophic failure".$^{[1]}$
+
+Being made of rubber-like material, there are a variety of conditions which may impact the ability of any O-ring to provide a complete seal and suffer distress. One which was investigated for the Space Shuttle program was temperature, where colder conditions can cause an O-ring to shrink and lose its elasticity. During the late 1970s and early 1980s, the SRB engine with the O-rings was qualified for temperatures as low as 40°F. 
 
 Without any additional statistics, when the Challenger started its Winter morning launch it was 32°F.
 
 ## Exploratory Data Analysis
 
-As with any dataset, understanding what information is available is a prerequisite to deciding on what value to extract from it. Although the size of this dataset is small, with only 23 observations from previous Shuttle launches, the choice of how to treat it was a contributing factor to underestimating the *Challenger*'s risk.
+As with any dataset, understanding what information is available is a prerequisite to deciding on what value to extract from it. Although the size of this dataset is small, with only 23 observations from previous Shuttle launches, the choice of how to treat it is equally as important and influential to later analysis.
 
 ```{r, include=FALSE}
 options(tinytex.verbose = TRUE)
 ```
-
-**Part 1 (25 points)**
-
-Conduct a thorough EDA of the data set, including univariate, bivariate and trivariate analysis. This should include both graphical and tabular analysis as taught in this course. Output-dump (that is, graphs and tables that don't come with explanations) will result in a very low, if not zero, score. Since the report has a page-limit, you will have to be selective when choosing visuals to illustrate your key points, associated with a concise explanation of the visuals. This EDA should begin with an inspection of the given dataset; examination of anomalies, missing values, potential of top and/or bottom code etc.   
-
-First, the data set will be read-in.
 
 ```{r, message = FALSE}
 library(data.table)
@@ -58,26 +54,32 @@ library(mcprofile)
 
 d <- read.csv("challenger.csv")
 d <- data.table(d)
+
+grid.table(head(d), rows = NULL)
 ```
 
-With the data loaded, it can be seen that there are `r length(d)` variables and `r nrow(d)` observations. Between these, there are `r sum(is.na(d))` missing values. In total there is a small amount of information available, which is to be expected with rare events such as space shuttle launches. However, it will also provide more opportunities for intimate examination of the variables and their trends.
+With the data loaded, it can be seen that there are `r length(d)` variables and `r nrow(d)` observations. Between these, there are `r sum(is.na(d))` missing values. In total there is a small amount of information available, which is to be expected with rare events such as Space Shuttle launches. However, it provides an opportunity to more thoroughly examine all aspects of the dataset.
 
-Based on the information in the accompanying paper, the meaning of each variable can be understood. `Flight` represents a generic index for each launch entry. `O.ring` represents the number of primary field O-rings which experienced a "thermal distress" event for each flight. Each shuttle has six primary field O-rings in total, which is shown by the variable `Number`. `Temp` and `Pressure` represent the O-ring launch temperature in Fahrenheit and pressure in psi respectively. 
+To begin, the meaning of each variable must be properly understood. `Flight` represents a generic index for each launch. `O.ring` represents the number of primary field-joint O-rings which experienced a "thermal distress" event for each flight. A thermal distress event was defined as when either the effects of erosion or blow by could be observed in the recovered SRBs post launch. Although every launch had 12 field-joint O-rings in total, only six of these are primary while the second six are secondary. This was to design for redundancy, even though mechanisms were found which could lead to the immediate failure of the secondary O-rings should the primary fail as mentioned in **Background**. As confirmation of the total, the variable `Number` represents the count of primary field-joint O-rings and is constant at six for all launches. `Temp` and `Pressure` represent the recorded field-joint temperature in Fahrenheit and pressure in psi respectively. `Temp` is recorded to the nearest degree, while `Pressure` is recorded to the nearest 50 psi (e.g. 50, 100, 150, etc). With a much coarser grain of pressure measurements, it may be less meaningful since less specific information is recorded.
 
-Because the total number of O-rings for each launch is constant at 6, it will not be used further. Instead, the O-ring variable will be examined to start.
+Being the cause of the accident, the `O.ring` variable will be examined to start. In this analysis, unless stated otherwise "O-ring" will refer specifically to a primary field-joint O-ring.
 
 ```{r}
 ggplot(d, aes(O.ring)) +
-  geom_histogram(binwidth = 1, fill = "black", color='black', alpha=0.7) +
+  geom_histogram(binwidth = 1, fill = "black", color='black', alpha=0.8) +
   ggtitle("Figure 1. O-Ring Distribution") +
-  xlab("Number of O-Ring Thermal Distress Events") +
+  xlab("Count of O-Ring Thermal Distress Events per Launch") +
   ylab("Count")
 ```
 
-Shown above in *Figure 1.*, the majority of launches had O-rings which experienced no thermal distress events. About 5 launches had a single O-ring experience thermal distress, while even fewer had two. None of the recorded launches had greater than two O-rings distress events. With the majority of launches not experiencing any O-ring distress in this data set, those that experienced any distress at all can be grouped together for a more discrete analysis.
+Shown above in **Figure 1**, the majority of launches had O-rings which experienced no thermal distress events. About 5 launches had a single O-ring experience thermal distress, while even fewer had two. None of the recorded launches had greater than two O-rings distress events. However, for a catastrophic failure to occur, all that was potentially needed would be a single primary O-ring failure to occur when its secondary backup had rotated and lost contact for a seal. 
+
+With the majority of launches not experiencing O-ring distress, those that experienced any distress at all can be grouped together for a more discrete analysis.
 
 ```{r}
 d$distress <- d$O.ring > 0
+
+grid.table(tail(d), rows = NULL)
 ```
 
 To better differentiate between these two situations, a new Boolean variable is created which indicates whether a launch had at least one O-ring distress event or not. With two potential predictors of these failures, `Temp` and `Pressure`, it will be important to understand how they relate to the distribution of the outcome.
@@ -92,9 +94,9 @@ ggplot(d, aes(factor(distress), Temp)) +
   ylab("Temperature (°F)")
 ```
 
-Demonstrated in *Figure 2*, O-Ring distress events generally occurred at lower launch temperatures. In fact, with so few total observations, it can be seen that over half of the launches with O-ring failures were at lower temperatures than the coldest launch with no O-ring failures. There is a single outlier that is notable, however, where a distress event occurred at a launch temperature of ~75°F. This temperature would be greater than average even among launches which experienced no distress, further demonstrating how it is extreme. Note that because of this value, along with generally having a wider distribution, there is greater temperature variance among launches which did have distress events compared to those which did not. 
+Demonstrated in **Figure 2**, O-Ring distress events generally occurred at lower launch temperatures. In fact, with so few total observations, it can be seen that over half of the launches with O-ring distress were at lower temperatures than the coldest launch with no O-ring distress There is a single outlier that is notable, however, where a distress event occurred at a launch temperature of ~75°F. This temperature would be greater than average even among launches which experienced no distress. Note that because of this point, along with generally having a wider distribution, there is greater temperature variance among launches which had distress events compared to those which did not. 
 
-The other environmental variable in the data set, `pressure`, may also be examined in addition to temperature to see if insightful relationships emerge. The `O.ring` variable may also be re-visualized with these two to see if the most extreme environmental conditions are associated with greater O-ring distress events.
+The other environmental variable in the data set, `Pressure`, may also be examined to see if insightful relationships emerge. 
 
 ```{r}
 ggplot(data = d, aes(Temp, O.ring, color = Pressure)) +
@@ -106,19 +108,21 @@ ggplot(data = d, aes(Temp, O.ring, color = Pressure)) +
   scale_color_gradient(low = "#56B1F7", high = "#132B43")
 ```
 
-*Figure 3* shows that generally the launches with a greater number of O-ring distress events occurred at lower temperatures and higher pressures. This also fits with conceptual information known about the O-rings, such as lower temperatures causing them to shrink in size and provide a less complete seal against gases. Higher pressures could then also cause more erosion/blowby from a greater amount of gas in the same space in the system. While all of the distress events did occur in the highest pressure category, the general trend does not seem as strong as with temperature. For example, the highest pressure rating of 200 psi was also the most common value of this variable generally. However, temperatures around the midpoint of the range ~65-75°F also had lower pressures, which may have helped them avoid any distress events.
+**Figure 3** shows that generally the launches with a greater number of O-ring distress events occurred at lower temperatures and higher pressures. This also fits with conceptual information known about the O-rings, such as lower temperatures causing them to shrink in size and provide a less complete seal against gases. Higher pressures could then also cause more erosion/blowby from a greater amount of gas in the same space in the system. While all of the distress events did occur at the highest pressure measurement of 200 psi, the general trend does not seem as strong as with temperature. For example, 200 psi pressure measurement was also the most common value of this variable generally. However, temperatures around the midpoint of the range ~65-75°F also had lower pressures, which may have helped them avoid any distress events.
 
-The correlation between these variables can also be computed numerically for a more thorough understanding.
+The correlation between these variables can also be computed numerically for a more thorough understanding. Although pressure is binned into multiples of 50 psi, resembling a categorical or ordinal variable, the ratio of one pressure to another is still meaningful. For example, 200 psi is known to be four times as much pressure as 50 psi. A pressure of zero psi is also meaningful, meeting the definition for a ratio variable. Since theoretically a pressure can take on any value, even if only multiples of 50 are recorded, it will still be treated as a continuous variable. The count of O-rings which experienced distress meets the same definition of a ratio variable but is by nature discrete and not continuous. For example, 1.5 O-rings cannot experience distress. Therefore, Spearman's rank correlation coefficient will be used.
 
 ```{r, warning=FALSE}
-# generate correlation table without certain columns
 cat("Table 1. Correlation of Numerical Variables\n")
-cor(d[ , !c("Flight","Number","distress")])
+# generate correlation table without certain columns
+cor(d[ , !c("Flight","Number","distress")], method = "spearman")
 ```
 
-*Table 1* shows the correlation between the three numerical variables which varied in the data set over the course of the launches, being `Temp`, `Pressure`, and `O.ring`. As suspected in *Figure 3*, pressure had a slight positive correlation with O-ring distress incidents. This supports the previous observation that higher pressures were associated with both launches with and without distress events, but lower pressures almost always were on flights without any distress events. Temperature has a stronger negative correlation with O-ring distress events. This continues to follow the trend shown in *Figures 2* and *3* where flights which experienced any distress were generally at colder temperatures. Finally, we can also see that temperature and pressure have a much smaller and slightly positive correlation with each other. This is in agreement with physical science, where gas enclosed in fixed volume will grow to higher pressures if the temperature is increased. Since the function of the O-ring is to provide a seal, i.e. a fixed volume, it would be reasonable that there is a slight positive correlation between the two.
+**Table 1** shows the correlation between the three numerical variables which varied in the data set over the course of the launches, being `Temp`, `Pressure`, and `O.ring`. As suspected in **Figure 3**, pressure had a positive correlation with O-ring distress incidents. This supports the previous observation that higher pressures were associated with both launches with and without distress events, but lower pressures almost always were on flights without any distress events. 
 
-```{r}
+Temperature had a stronger negative correlation with O-ring distress events. This continues to follow the trend shown in **Figures 2** and **3** where flights which experienced any distress were generally at colder temperatures. Finally, we can also see that temperature and pressure have a much smaller and slightly positive correlation with each other. This is in agreement with physical science, where gas enclosed in fixed volume will grow to higher pressures if the temperature is increased. Since the function of the O-ring is to provide a seal, i.e. a fixed volume, it would be reasonable that there is a slight positive correlation between the two.
+
+```{r, include = FALSE}
 # turn data into a data.frame from data.table
 # for later analysis
 d <- data.frame(d)
