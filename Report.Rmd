@@ -82,7 +82,7 @@ d$distress <- d$O.ring > 0
 grid.table(tail(d), rows = NULL)
 ```
 
-To better differentiate between these two situations, a new Boolean variable is created which indicates whether a launch had at least one O-ring distress event or not. With two potential predictors of these failures, `Temp` and `Pressure`, it will be important to understand how they relate to the distribution of the outcome.
+To better differentiate between these two situations, a new Boolean variable named `distress` is created which indicates whether a launch had at least one O-ring distress event or not. With two potential predictors of these failures, `Temp` and `Pressure`, it will be important to understand how they relate to the distribution of the outcome.
 
 ```{r, message = FALSE}
 ggplot(d, aes(factor(distress), Temp)) +
@@ -130,36 +130,60 @@ Temperature had a stronger negative correlation with O-ring distress events. Thi
 d <- data.frame(d)
 ```
 
-With the given context, there are different potential approaches to estimate the relationship between the environmental variables and O-ring distress. Given that each O-ring is discrete, a Poisson or Binomial distribution could be used depending on the scenario and modeling goals. The Poisson distribution describes processes which, among other things, occur over an interval at a constant average rate. This could be used to model the expected count of O-rings which fail for a series of Space Shuttle launches. However, the focus on the average over time is not particularly useful to estimate failure in a specific future launch. The Binomial distribution, on the other hand, describes processes which have a sequence of binary events, such as success or failure of multiple O-rings within a single Shuttle launch. This would be much more fitting for predicting a probability of failure on a single launch in the future, such as the *Challenger* at the start of its final mission.  
+With the given context, there are different potential approaches to estimate the relationship between the environmental variables and O-ring distress. Given that each O-ring is discrete, a Poisson or Binomial distribution could be used depending on the scenario and modeling goals. The Poisson distribution describes processes which, among other things, occur over an interval at a constant average rate. This could be used to model the expected count of O-rings which fail for a series of Space Shuttle launches. However, the focus on the average over time is not particularly useful to estimate failure in a specific future launch. The Binomial distribution, on the other hand, describes processes which have a sequence of binary events, such as success or failure of multiple O-rings within a single Shuttle launch. This would be much more fitting for predicting a probability of failure on a single launch in the future, such as the *Challenger* at the start of its final mission. Because of this, only the Binomial distribution will be used in this investigation.
 
-For both the Poisson and Binomial distributions, an assumption of independence is required. This would require that each Space Shuttle launch is independent and identically distributed (IID) compared to all others. In general this should be true, although there may be minor reasons why this is violated. For example, over time Shuttle technology or launch procedures may have been improved based on prior experience. This would be equivalent to a distributional change over time. In addition, part of the reason SRBs were recovered were not just for observing O-ring damage, but also for refurbishment and potential re-use in later launches. Having sets of launches with the same SRBs could result in sets of correlated observations that are different from other flights. It could also be expected that re-used SRBs could in general cause greater O-ring distress than those being newly used. This would be a notable violation since it can involve the observed outcome of O-ring damage along with its relationship to environmental conditions. With either a Poisson or Binomial distribution, it must be assumed to be negligent. In the future, knowledge of which SRBs were re-used for which launches could be incorporated into modeling for a more accurate estimate.
+For both the Poisson and Binomial distributions, however, an assumption of independence is required. This would require that each Space Shuttle launch is independent and identically distributed (IID) compared to all others. In general this should be true, although there may be minor reasons why this is violated. For example, over time Shuttle technology or launch procedures may have been improved based on prior experience. This would be equivalent to a distributional change over time. In addition, part of the reason SRBs were recovered were not just for observing O-ring damage, but also for refurbishment and potential re-use in later launches. Having sets of launches with the same SRBs could result in sets of correlated observations that are different from other flights. It could also be expected that re-used SRBs could in general cause greater O-ring distress than those being newly used. This would be a notable violation since it can involve the observed outcome of O-ring damage along with its relationship to environmental conditions. With either a Poisson or Binomial distribution, it must be assumed to be negligent. In the future, knowledge of which SRBs were re-used for which launches could be incorporated into modeling for a more accurate estimate.
 
-Because of its better fit for the use case of predicting the probability of the *Challenger* disaster, the Binomial distribution will be used. Specifically, it will feature *n* = 6 IID O-rings on each flight, each with a probability *p* of experiencing distress. In addition to each Shuttle launch being IID, each of the six O-rings for any given flight must be IID as well. If the O-rings were not independent, the damage of a given O-ring would not only be a function of the environmental variables but also of the damage of other O-rings. Consequently, there would not be just one relationship between the O-ring damage and the predictors, but multiple relationships depending on which O-ring was under consideration. 
+These modeling options also require that in addition to each Shuttle launch being IID, each of the six O-rings for any given flight must be IID as well. If the O-rings were not independent, the damage of a given O-ring would not only be a function of the environmental variables but also of the damage of other O-rings. Consequently, there would not be just one relationship between the O-ring damage and the environment, but multiple relationships depending on which O-ring was under consideration. 
 
 Just like with the IID Shuttle launches, this is avoided with the assumption of independence however it may not be completely valid. For example, the six O-rings are spread out across two SRBs for each launch. It could be expected that there are small differences from between specific SRBs with respect to the stress the O-rings experience. For example, if an O-ring in one SRB had minor manufacturing differences that put more stress on its O-rings then these observations would be correlated. The three O-rings in the other SRB, however, may have their own correlation based on its own unique qualities. Therefore, in reality there is likely some relationship between the O-rings within a single SRB that is ignored for the sake of the model.
 
-(b) Estimate the logistic regression model using the explanatory variables in a linear form.
-
-There are two explanatory variables of interest, `Temp` and `Pressure`. First `Temp` is fit in a standalone model, and then another with both `Temp` and `Pressure`.
-
 ```{r}
-# Null hypothesis- coefficient of pressure is 0
-model_h0 <-  glm(formula = distress ~ Temp, data = d , 
-                 family = binomial(link = logit))
-
-# Alt hypothesis- coefficient of pressure is not 0
-model_h1 <- glm(formula = distress ~ Temp + Pressure, data = d , 
-                family = binomial(link = logit))
+# Determine fraction of O-rings that failed for each launch
+d$O.ring.fraction <- d$O.ring / d$Number
 ```
 
-(c) Perform LRTs to judge the importance of the explanatory variables in the model.
+With the assumption of independence, two different uses of the Binomial distribution will be investigated. The first will model *n* = 6 IID O-rings on each flight, each with an identical probability *p* of experiencing distress, as a single Bernoulli trial. The series of Shuttle launch observations, each with their own Bernoulli trials, will then make up a Bernoulli process. This will be referred to as the "full" outcome throughout the rest of this report. The second will investigate only the probability of a launch experiencing *any* O-ring distress by use of the binary `distress` variable created during the EDA. This will model the reduced *n* = 1 Bernoulli trial of whether at least one O-ring was distressed on a launch, with a single probability *p* of this occurring. The series of launches will likewise make up a Bernoulli process, and be referred to as the "binary" outcome throughout this report.
 
-In Part B, two models were fit to test the hypothesis:
-$$H_0: \beta_2 = 0$$
-$$H_a: \beta_2 \ne 0$$
-(where $\beta_2$ is the model coefficient of `Pressure` ). Note that the statistical significance of `Temp` is demonstrated in Section 3-A.
+An advantage of the former is that it uses all available information in the dataset, potentially estimating a more precise relationship between O-ring failure and environmental conditions. It also can provide a more useful prediction for the outcome of the *Challenger* disaster, since any design-flaw failure in a secondary O-ring when the primary is distressed would cause a catastrophe. Having an estimate of a specific number of primary O-rings which fail would then be proportional to the probability of the catastrophe. The use of the binary `distress` outcome, however, only estimates if at least one O-ring will fail without regard to how many. Still, because of its simpler nature it can potentially provide a more accurate estimate when the number of observations is so low. Therefore, the full model will be used to provide a primary estimate of the disaster's probability, with the binary model used as a spot-check against its results.
 
-A Likelihood Ratio (LR) test will be performed using the function *anova*. In general an LR test can be mathematically expressed as:
+There are two explanatory variables of interest, `Temp` and `Pressure`. To test whether either of these are significant, a series of three models will be created.
+$$PUT FIRST MODEL HERE$$
+The first, shown above, will only include an intercept and serve as the null hypothesis, where neither `Temp` nor `Pressure` have a relationship with O-ring distress. This equivalent to $\beta_{Temp} = \beta_{Pressure} = 0$.
+$$SECOND$$
+The second will include `Temp` as the sole independent variable. This is motivated by how Morton Thiokol was originally aware of O-ring condition deteriorating at lower temperatures using the same dataset. 
+$$Third$$
+Finally, `Pressure` will be included along with `Temp` in the third model to see if both environmental conditions can also be related to O-ring distress. As common with a Binomial distribution, a logit link function will be used to join the dependent and independent variables in all three models. 
+
+```{r}
+# Null hypothesis, no relationship between env and o-rings
+binary_null <- glm(formula = distress ~ Temp, data = d, 
+                   family = binomial(link = logit))
+
+# First alternative hypothesis, only temp has relationship
+binary_temp <- glm(formula = distress ~ Temp + Pressure, data = d, 
+                   family = binomial(link = logit))
+
+# Second alternative hypothesis, both env variables have relationship
+binary_both <- glm(formula = distress ~ Temp + Pressure, data = d,
+                   family = binomial(link = logit))
+
+# Null hypothesis, no relationship between env and o-rings
+binom_null <- glm(formula = O.ring.fraction ~ Temp, data = d, 
+                  family = binomial(link = logit))
+
+# First alternative hypothesis, only temp has relationship
+binom_temp <- glm(formula = O.ring.fraction ~ Temp + Pressure, data = d, 
+                  family = binomial(link = logit))
+
+# Second alternative hypothesis, both env variables have relationship
+binom_both <- glm(formula = O.ring.fraction ~ Temp + Pressure, data = d,
+                  family = binomial(link = logit))
+```
+
+The same set of three models will be used for both the full and binary outcome variables, shown above. A likelihood ratio test (LRT) will be used to determine whether a model associated with an alternative hypothesis is a significant improvement over the null hypothesis model. If the first alternative hypothesis is significant, i.e. involving only `Temp`, then the second alternative hypothesis will be assessed against it. 
+
+LRTs compare the likelihood of the alternative hypothesis model against the null hypothesis model. In general, an LRT is mathematically expressed as:
 
 $$-2log(\Lambda) = -2log( \frac{L(\hat{\mathbf{\beta}}^{(0)} | y_1, \dots, y_n)}{L(\hat{\mathbf{\beta}}^{(a)} | y_1, \dots, y_n)} = -2\sum y_i log\left( \frac{\hat{\pi}_i^{(0)}}{\hat{\pi}_i^{(a)}} \right) + (1 - y_i ) log\left( \frac{1- \hat{\pi}_i^{(0)}}{1- \hat{\pi}_i^{(a)}} \right)$$
 Where:
@@ -167,6 +191,8 @@ Where:
 - $\hat{\pi}_i^{(0)}$ is the estimated probability of success under $H_0$
 
 - $\hat{\pi}_i^{(a)}$ is the estimated probability of success under $H_a$
+
+Because of these planned, repeated hypothesis tests, the Bonferroni correction will be applied to strengthen the level of significance required to reject the null hypothesis. Starting from $\alpha$ = 0.05, with four comparisons between the alternative and null hypothesis models, the new p-value required for significance will be $\alpha = 0.05 / 4 = 0.0125$.
 
 Code for the anova function is:
 ```{r}
