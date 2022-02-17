@@ -143,25 +143,30 @@ Just like with the IID Shuttle launches, this is avoided with the assumption of 
 d$O.ring.fraction <- d$O.ring / d$Number
 ```
 
-With the assumption of independence, two different uses of the Binomial distribution will be investigated. The first will model *n* = 6 IID O-rings on each flight, each with an identical probability *p* of experiencing distress, as a single Bernoulli trial. The series of Shuttle launch observations, each with their own Bernoulli trials, will then make up a Bernoulli process. This will be referred to as the "full" outcome throughout the rest of this report. The second will investigate only the probability of a launch experiencing *any* O-ring distress by use of the binary `distress` variable created during the EDA. This will model the reduced *n* = 1 Bernoulli trial of whether at least one O-ring was distressed on a launch, with a single probability *p* of this occurring. The series of launches will likewise make up a Bernoulli process, and be referred to as the "binary" outcome throughout this report.
+With the assumption of independence, two different uses of the Binomial distribution will be investigated. The first will model *n* = 6 IID O-rings for flight, each with an identical probability *p* of experiencing distress. The set of O-rings within each launch and the series of all Shuttle launches will then make up a Bernoulli process. This will be referred to as the "full" outcome throughout the rest of this report. The second will investigate only the probability of a launch experiencing *any* O-ring distress by use of the binary `distress` variable created during the EDA. This will model the reduced *n* = 1 Bernoulli trial of whether at least one O-ring was distressed on a launch, with a single probability *p* of this occurring. This is a special case of the Binomial distribution known as the Bernoulli distribution, and will be referred to as the "binary" outcome throughout this report.
 
-An advantage of the former is that it uses all available information in the dataset, potentially estimating a more precise relationship between O-ring failure and environmental conditions. It also can provide a more useful prediction for the outcome of the *Challenger* disaster, since any design-flaw failure in a secondary O-ring when the primary is distressed would cause a catastrophe. Having an estimate of a specific number of primary O-rings which fail would then be proportional to the probability of the catastrophe. The use of the binary `distress` outcome, however, only estimates if at least one O-ring will fail without regard to how many. Still, because of its simpler nature it can potentially provide a more accurate estimate when the number of observations is so low. Therefore, the full model will be used to provide a primary estimate of the disaster's probability, with the binary model used as a spot-check against its results.
+An advantage of the former is that it uses all available information in the dataset, potentially estimating a more accurate relationship between O-ring failure and environmental conditions. It also can provide a more useful prediction for the outcome of the *Challenger* disaster, since any design-flaw failure in a secondary O-ring when the primary is distressed would cause a catastrophe. Having an estimate of a specific number of primary O-rings which fail would then be proportional to the probability of the catastrophe. The use of the binary `distress` outcome, however, only estimates if at least one O-ring will fail without regard to how many. Still, because of its simpler nature it can potentially be more precise when the number of observations is so low. Therefore, the full model will be used to provide a primary estimate of the disaster's probability, with the binary model used as a spot-check against its results.
 
 There are two explanatory variables of interest, `Temp` and `Pressure`. To test whether either of these are significant, a series of three models will be created.
-$$PUT FIRST MODEL HERE$$
-The first, shown above, will only include an intercept and serve as the null hypothesis, where neither `Temp` nor `Pressure` have a relationship with O-ring distress. This equivalent to $\beta_{Temp} = \beta_{Pressure} = 0$.
-$$SECOND$$
-The second will include `Temp` as the sole independent variable. This is motivated by how Morton Thiokol was originally aware of O-ring condition deteriorating at lower temperatures using the same dataset. 
-$$Third$$
-Finally, `Pressure` will be included along with `Temp` in the third model to see if both environmental conditions can also be related to O-ring distress. As common with a Binomial distribution, a logit link function will be used to join the dependent and independent variables in all three models. 
+
+$$logit(\pi) = \beta_0$$
+The first, shown above, will only include an intercept and serve as the null hypothesis where neither `Temp` nor `Pressure` have a relationship with O-ring distress. This equivalent to $\beta_{Temp} = \beta_{Pressure} = 0$. 
+
+As common with Binomial distributions, a logit link function is used to relate the dependent and independent variables. The logit is defined as $logit(\pi) = ln(\frac{\pi}{1 - \pi})$ where $\pi$ is the probability of the outcome of interest. In the full model, this is the probability of failure of a single O-ring while in the binary model it is the probability of failure in at least one O-ring in a launch.
+
+$$logit(\pi) = \beta_0 + \beta_{T}*T$$
+The second, shown above, will include `Temp` as the sole independent variable denoted by $T$. This is motivated by Morton Thiokol's pre-launch investigation of O-ring condition deteriorating at lower temperatures using the same dataset. Later, it will be shown how their mistakes in statistical modeling lead to an underestimate of the probability of catastrophe. 
+
+$$logit(\pi) = \beta_0 + \beta_{T}*T + \beta_{P}*P$$
+Finally, the `Pressure` $P$ will be included along with $T$ in the third model to see if both environmental conditions are also significantly related to O-ring distress. 
 
 ```{r}
 # Null hypothesis, no relationship between env and o-rings
-binary_null <- glm(formula = distress ~ Temp, data = d, 
+binary_null <- glm(formula = distress ~ 1, data = d, 
                    family = binomial(link = logit))
 
 # First alternative hypothesis, only temp has relationship
-binary_temp <- glm(formula = distress ~ Temp + Pressure, data = d, 
+binary_temp <- glm(formula = distress ~ Temp, data = d, 
                    family = binomial(link = logit))
 
 # Second alternative hypothesis, both env variables have relationship
@@ -169,123 +174,136 @@ binary_both <- glm(formula = distress ~ Temp + Pressure, data = d,
                    family = binomial(link = logit))
 
 # Null hypothesis, no relationship between env and o-rings
-binom_null <- glm(formula = O.ring.fraction ~ Temp, data = d, 
-                  family = binomial(link = logit))
+binom_null <- glm(formula = O.ring.fraction ~ 1, data = d, 
+                  family = binomial(link = logit), weights = Number)
 
 # First alternative hypothesis, only temp has relationship
-binom_temp <- glm(formula = O.ring.fraction ~ Temp + Pressure, data = d, 
-                  family = binomial(link = logit))
+binom_temp <- glm(formula = O.ring.fraction ~ Temp, data = d, 
+                  family = binomial(link = logit), weights = Number)
 
 # Second alternative hypothesis, both env variables have relationship
 binom_both <- glm(formula = O.ring.fraction ~ Temp + Pressure, data = d,
-                  family = binomial(link = logit))
+                  family = binomial(link = logit), weights = Number)
 ```
 
-The same set of three models will be used for both the full and binary outcome variables, shown above. A likelihood ratio test (LRT) will be used to determine whether a model associated with an alternative hypothesis is a significant improvement over the null hypothesis model. If the first alternative hypothesis is significant, i.e. involving only `Temp`, then the second alternative hypothesis will be assessed against it. 
+The same set of three models will be used for both the full and binary outcome variables, shown above. Note that for the full models, instead of creating *n* = 6 unique data points for the O-rings of each launch, the fraction of O-ring failures in a single launch was used as the dependent variable. When paired with the weights of each observation, which is constant at six O-rings for all launches, this produces the same point estimate of model coefficients. 
+
+A likelihood ratio test (LRT) will be used to determine whether a model associated with an alternative hypothesis is a significant improvement over the null hypothesis model. If the first alternative hypothesis is significant, i.e. involving only $T$, then the second alternative hypothesis including both $T$ and $P$ will be assessed against it. 
 
 LRTs compare the likelihood of the alternative hypothesis model against the null hypothesis model. In general, an LRT is mathematically expressed as:
 
 $$-2log(\Lambda) = -2log( \frac{L(\hat{\mathbf{\beta}}^{(0)} | y_1, \dots, y_n)}{L(\hat{\mathbf{\beta}}^{(a)} | y_1, \dots, y_n)} = -2\sum y_i log\left( \frac{\hat{\pi}_i^{(0)}}{\hat{\pi}_i^{(a)}} \right) + (1 - y_i ) log\left( \frac{1- \hat{\pi}_i^{(0)}}{1- \hat{\pi}_i^{(a)}} \right)$$
 Where:
 
-- $\hat{\pi}_i^{(0)}$ is the estimated probability of success under $H_0$
+- $\Lambda$ is the likelihood ratio test statistic
 
-- $\hat{\pi}_i^{(a)}$ is the estimated probability of success under $H_a$
+- $L()$ is the likelihood function of the estimated model given the data, which in this case involves cross entropy between the predicted probabilities and binary true values. 
+
+- $\hat{\pi}_i^{(0)}$ is the estimated probability of success of Bernoulli trial $i$ under the null hypothesis $H_0$
+
+- $\hat{\pi}_i^{(a)}$ is the estimated probability of success of Bernoulli trial $i$ under the alternative hypothesis $H_a$
+
+```{r}
+alpha <- 0.05
+significance_level <- alpha / 4
+```
 
 Because of these planned, repeated hypothesis tests, the Bonferroni correction will be applied to strengthen the level of significance required to reject the null hypothesis. Starting from $\alpha$ = 0.05, with four comparisons between the alternative and null hypothesis models, the new p-value required for significance will be $\alpha = 0.05 / 4 = 0.0125$.
 
-Code for the anova function is:
 ```{r}
-anova_obj <- anova(model_h0 , model_h1, test = "Chisq")
-anova_obj
-
-beta_est <- anova_obj$`Pr(>Chi)`[2]
+binary_temp_test <- anova(binary_null, binary_temp, test = "LRT")
+binom_temp_test <- anova(binom_null, binom_temp, test = "LRT")
 ```
 
-From analyzing the anova outputs, we see that the probability of obtaining a non-zero value of coefficient of `Pressure` is `r beta_est`, hence there is not enough evidence to reject the null-hypothesis.
-
-(d) The authors chose to remove Pressure from the model based on the LRTs. Based on your results, discuss why you think this was done. Are there any potential problems with removing this variable?
-
-In the previous LR test, there was not sufficient evidence to reject the null hypothesis, and thus the `Pressure` variable was found to be insignificant. This agrees with the authors' choice. To better understand this result, the confidence interval (CI) can also be examined. This helps to understand the uncertainty in this result with such a small number of samples in the data set.
-
-```{r, message=FALSE}
-pressure_ci <- confint(object = model_h1 , parm = "Pressure", level = .95)
-```
-
-It can be seen that the 95% Wald CI is between `r pressure_ci[1]` and `r pressure_ci[2]`. As zero lies within the CI, there is additional evidence that the `Pressure` variable is not statistically significant from both Wald and the previous LR test. There is a failure to reject the null-hypothesis, which states that $\beta_{Pressure}=0$.
-
-To see how this could effect the odds of a launch failure, and cause a potential problem in the model, consider a 10 psi increase in `Pressure` with all else constant. 
+When performing the LRTs including only temperature in the alternative hypothesis, p-values of `r round(binary_temp_test[["Pr(>Chi)"]][2], 4)` and `r round(binom_temp_test[["Pr(>Chi)"]][2], 4)` are found for the binary and full models respectively. The binary model is definitively past the threshold required for significance of `r significance_level`, but the full model is very slightly above. While this would normally result in a failure to reject the null hypothesis, often times the choice of interpretation is dependent on the testing context and broader considerations. In particular, methods for defining significance should be viewed as guidelines rather than hard and fast rules. In this case, the Bonferroni correction is known for being overly conservative in that it guarantees the family wise Type I error rate will *always* be less than the desired level of $\alpha$. In particular, strict adherence to the Bonferroni correction is known for higher Type II error rates, or failure to reject a false null hypothesis. The significance of temperature in the binary model also suggests this could be the case if judging the borderline full model as non-significant. Therefore, for being nearly at the threshold and with these considerations, this result will still be taken as significant. 
 
 ```{r}
-exp_pressure_ci <- exp(10*pressure_ci)
+binary_pressure_test <- anova(binary_temp, binary_both, test = "LRT")
+binom_pressure_test <- anova(binom_temp, binom_both, test = "LRT")
 ```
 
-With every 10 psi increase in `Pressure` the odds of a launch failure changes between `r exp_pressure_ci[1]` and `r exp_pressure_ci[2]` times at the 95% confidence level. This re-demonstrates that `Pressure` is not significant, since the OR contains 1, but it does show that the majority of the predicted OR is greater than one. An OR greater than one would indicate that an increase in the variable would lead to greater odds of the outcome event occuring. As was seen before, there did appear to be a slight positive correlation between higher pressures and O-ring distress, which likely led to most of the OR being above 1 in the interval. In addition, `Pressure` is a physical phenomena related to `Temperature` in the system, and only considering one and not the other may be taking a unnecessary risk. However, due to being statistically insignificant, there is not evidence that the model would perform better with its inclusion and so it will be dropped.
+With the first pair of alternative hypotheses being failed to be rejected, they now will take the position of the null hypothesis for comparison against including pressure. For these LRTs, p-values of `r round(binary_pressure_test[["Pr(>Chi)"]][2], 4)` and `r round(binom_pressure_test[["Pr(>Chi)"]][2], 4)` are found for the binary and full models respectively. Unlike the previous borderline case, both of these are well above the Bonferroni corrected significance level as well as the original $\alpha$. Therefore, the null hypothesis that pressure does not have a significant relationship with O-ring condition is failed to be rejected. Moving forward, the temperature-only models will be used for further investigation and prediction.
 
-**Part 3 (35 points)**
+Before use of the models for specific tasks, the fitted parameters within the model should also be examined. In this case, $\beta_T$ may be interpreted for the relationship between temperature and O-ring failure. When doing so with any link function other than the identity link, changes in an independent variable must account for additional transformation(s) to find the change in the dependent variable. 
 
-Answer the following from Question 5 of Bilder and Loughin Section 2.4 Exercises (page 129-130):
+$$OR = \frac{Odds_{T + c}}{Odds_T} = \frac{\pi_{T+c}}{1-\pi_{T+c}}*\frac{1-\pi_T}{\pi_T}= \frac{exp(\beta_0 + \beta_T*(T + c))}{exp(\beta_0 + \beta_T*T)} = exp(\beta_T * c)$$
 
-Continuing Exercise 4, consider the simplified model $logit(\pi) = \beta_0 +  \beta_1 Temp$, where $\pi$ is the probability of an O-ring failure. Complete the following:
-
-(a) Estimate the model.
-
-Above, we demonstrated that a model including the `Pressure` variable did not offer significantly more information compared to a model with only temperature as the dependent variable. 
+With a logit link function, changes in an independent variable are most commonly interpreted through the odds ratio (OR), with a derivation for this context shown above. Specifically, the example shown describes the OR as a function of a *c* °F increase in temperature. Previously, the coefficient of temperature $\beta_T$ was estimated to be about `r round(binary_temp[["coefficients"]][["Temp"]], 3)` in the binary model and `r round(binom_temp[["coefficients"]][["Temp"]], 3)` in the full model. Both are negative, implying that generally as temperature increases then the estimated odds of O-ring failure decreases. Conversely, as temperature decreases then the estimated odds of O-ring failure increases. 
 
 ```{r}
-# Repeat with binomial model
-# binomial_model <- glm(formula = distress/Number ~ Temp, data = d , family = binomial(link = logit))
-# This is the binary model
-fail_model <- glm(formula = distress ~ Temp, data = d , 
-                  family = binomial(link = logit))
-se <- sqrt(diag(vcov(fail_model)))
+c <- -10
+binary_or <- exp(c*binary_temp[["coefficients"]][["Temp"]])
+binom_or <- exp(c*binom_temp[["coefficients"]][["Temp"]])
 ```
 
-In this model, an increase in the temperature by 1 degree Fahrenheit will cause a `r round(as.numeric(fail_model$coefficients[2]), 3)` decrease in the log-odds of an O-ring failure event. This coefficient value is associated with a standard error of `r round(as.numeric(se[2]), 3)`, which is significant at the 95% level. This demonstrates that `Temp` is a significant variable for predicting the outcome. 
+For a 10°F decrease in temperature, the OR would be about `r round(binary_or, 1)` in the binary model and `r round(binom_or, 1)` in the full model. Put into context, this implies that with a 10°F lower temperature the odds of *any* O-ring failure increases by `r round(binary_or, 1)` and the odds of a specific O-ring failure increases by `r round(binom_or, 1)`. This change is irrespective of the starting temperature, and as the change in temperature grows more negative then the odds of O-ring failure will continue to increase.
 
-(b) Construct two plots: (1) $\pi$ vs. Temp and (2) Expected number of failures vs. Temp. Use a temperature range of 31° to 81° on the x-axis even though the minimum temperature in the data set was 53°.
+```{r}
+# calculate Wald standard errors for model coefficients
+binary_se <- sqrt(diag(vcov(binary_temp)))
+binom_se <- sqrt(diag(vcov(binom_temp)))
+```
 
-(c) Include the 95% Wald confidence interval bands for $\pi$ on the plot. Why are the bands much wider for lower temperatures than for higher temperatures?
+For future plotting, visualization of confidence intervals will sometimes be included. While the previous hypothesis tests were LRTs, when this is done the Wald confidence intervals will be used instead.
 
-First, we construct a data frame of X-values (i.e. temperature in degrees Fahrenheit), that will be used to predict $\pi$. Then, we feed this data frame into the model using the predict function, with the `response` function specified and `se=TRUE` . This returns a corresponding vector of probabilities for failure based upon the existing `fail_model` which was previously specified:
+```{r, warning = FALSE}
+# create sequence of temperatures to show on plot
+temps <- data.frame(Temp = seq(30,82,1))
 
-```{r, warning=FALSE}
-# Create a dataframe of new temperatures
-temps <- data.frame(seq(31,81,1))
-colnames(temps) = 'Temp'
+# make predictions on the sequence of temperatures
+binary_prob <- predict(object = binary_temp, newdata = temps, 
+                       type='response', se=TRUE)
+binom_prob <- predict(object = binom_temp, newdata = temps, 
+                       type='response', se=TRUE)
 
-# Create vector of predictions using model_h0 (i.e. the model without pressure)
-temp_prob <- predict(object=fail_model, newdata=temps, type='response', se=TRUE)
+# pi values
+binary_pis <- binary_prob$fit
+binom_pis <- binom_prob$fit
+# standard errors
+binary_ses <- binary_prob$se.fit
+binom_ses <- binom_prob$se.fit
 
-# Pi values
-temp_pis <- temp_prob$fit
-# SEs
-temp_ses <- temp_prob$se.fit
+# 2.5th percentile
+binary_lower_ci <- binary_pis - qnorm(p = 1 - alpha/2)*binary_prob$se
+binom_lower_ci <- binom_pis - qnorm(p = 1 - alpha/2)*binom_prob$se
+# 97.5th percentile
+binary_upper_ci <- binary_pis + qnorm(p = 1 - alpha/2)*binary_prob$se
+binom_upper_ci <- binom_pis + qnorm(p = 1 - alpha/2)*binom_prob$se
 
-alpha <- .05
+binary_df <- data.frame(temp = temps$Temp, pi = binary_pis, 
+                        lwr = binary_lower_ci, upr = binary_upper_ci)
+binom_df <- data.frame(temp = temps$Temp, pi = binom_pis, 
+                        lwr = binom_lower_ci, upr = binom_upper_ci)
 
-#2.5th %ile
-lower_ci <- temp_pis - qnorm(p = 1-alpha/2)*temp_prob$se
-#97.5th %ile
-upper_ci <- temp_pis + qnorm(p = 1-alpha/2)*temp_prob$se
+binary_color <- "red"
+binom_color <- "blue"
 
-final_temp <- data.frame(temps$Temp, temp_pis, lower_ci, upper_ci)
-colnames(final_temp) <- c('temp', 'pi', 'lwr', 'upr')
-
-ggplot(data=final_temp, aes(x=temp)) + 
-  geom_line(aes(y=pi)) + 
-  geom_line(aes(y=lwr), color='red', linetype='dotted') + 
-  geom_line(aes(y=upr), color='darkgreen', linetype='dotted') + 
+ggplot() + 
+  geom_line(data = binary_df, aes(x = temp, y = pi, color = binary_color),
+            show.legend = TRUE) + 
+  geom_line(data = binary_df, aes(x = temp, y = lwr), 
+            color = binary_color, linetype = "dotted") + 
+  geom_line(data = binary_df, aes(x = temp, y = upr),
+            color = binary_color, linetype = "dotted") +
+  geom_line(data = binom_df, aes(x = temp, y = pi, color = binom_color),
+            show.legend = TRUE) + 
+  geom_line(data = binom_df, aes(x = temp, y = lwr), 
+            color = binom_color, linetype = "dotted") + 
+  geom_line(data = binom_df, aes(x = temp, y = upr),
+            color = binom_color, linetype = "dotted") +
   ylim(0,1) + 
-  ggtitle("Figure 4. Probability of O.Ring Failure by Temperature") + 
+  ggtitle("Figure 4. Probability of O-Ring Failure by Temperature") + 
   ylab(expression(pi)) + 
-  xlab("Temp (F°)") + 
-  geom_hline(yintercept=1.0, linetype='dotted') +
-  geom_hline(yintercept=0.0, linetype='dotted') +
-  geom_point(data = d, aes(x=Temp, y= ifelse(distress==TRUE, 1, 0) ), 
+  xlab("Temperature (°F)") + 
+  geom_hline(yintercept = 1.0, linetype = "dotted") +
+  geom_hline(yintercept = 0.0, linetype = "dotted") +
+  geom_point(data = d, aes(x = Temp, y = ifelse(distress==TRUE, 1, 0)), 
              shape = 17) +
-  geom_text(aes(x = 58, y = 0.27), label = "2.5th %ile C.I.", color='red') + 
-  geom_text(aes(x = 78, y = 0.30), label = "97.5th %ile C.I.", color='darkgreen')
+  scale_color_identity(name = "Model",
+                       labels = c("Binary", "Full"),
+                       breaks = c(binary_color, binom_color),
+                       guide = "legend")
+
 ```
 
 Shown above in *Figure 4*, the estimated probability of any O-ring failure is close to 1 at low temperatures, including the temperature at which the Challenger launched at.
