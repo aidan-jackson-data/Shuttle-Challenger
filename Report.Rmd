@@ -35,7 +35,15 @@ Although the secondary O-rings were a backup should distress and failure occur i
 
 Being made of rubber-like material, there are a variety of conditions which may impact the ability of any O-ring to provide a complete seal and suffer distress. One which was investigated for the Space Shuttle program was temperature, where colder conditions can cause an O-ring to shrink and lose its elasticity. During the late 1970s and early 1980s, the SRB engine with the O-rings was qualified for temperatures as low as 40°F. 
 
-Without any additional statistics, when the Challenger started its Winter morning launch it was 32°F.
+Without any additional statistics, when the Challenger started its Winter morning launch it was 36°F.
+
+```{r, message = FALSE}
+library(data.table)
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+library(mcprofile)
+```
 
 ## Exploratory Data Analysis
 
@@ -46,12 +54,6 @@ options(tinytex.verbose = TRUE)
 ```
 
 ```{r, message = FALSE}
-library(data.table)
-library(ggplot2)
-library(gridExtra)
-library(dplyr)
-library(mcprofile)
-
 d <- read.csv("challenger.csv")
 d <- data.table(d)
 
@@ -87,6 +89,7 @@ To better differentiate between these two situations, a new Boolean variable nam
 ```{r, message = FALSE}
 ggplot(d, aes(factor(distress), Temp)) +
   geom_boxplot(aes(fill = factor(distress))) +
+  scale_fill_brewer(palette = "Set1", direction = -1) +
   theme(legend.position = "none") +
   geom_jitter() +
   ggtitle("Figure 2. Temperature vs. O-Ring Distress Event") +
@@ -105,7 +108,9 @@ ggplot(data = d, aes(Temp, O.ring, color = Pressure)) +
   xlab("Temperature (°F)") +
   ylab("O-Ring Distress Events") +
   labs(size = "Pressure (psi)") +
-  scale_color_gradient(low = "#56B1F7", high = "#132B43")
+  scale_color_gradient(low = "blue", high = "red") +
+  scale_y_continuous(breaks = c(0, 1, 2)) +
+  scale_x_continuous(breaks = c(50, 60, 70, 80))
 ```
 
 **Figure 3** shows that generally the launches with a greater number of O-ring distress events occurred at lower temperatures and higher pressures. This also fits with conceptual information known about the O-rings, such as lower temperatures causing them to shrink in size and provide a less complete seal against gases. Higher pressures could then also cause more erosion/blowby from a greater amount of gas in the same space in the system. While all of the distress events did occur at the highest pressure measurement of 200 psi, the general trend does not seem as strong as with temperature. For example, 200 psi pressure measurement was also the most common value of this variable generally. However, temperatures around the midpoint of the range ~65-75°F also had lower pressures, which may have helped them avoid any distress events.
@@ -147,18 +152,18 @@ With the assumption of independence, two different uses of the Binomial distribu
 
 An advantage of the former is that it uses all available information in the dataset, potentially estimating a more accurate relationship between O-ring failure and environmental conditions. It also can provide a more useful prediction for the outcome of the *Challenger* disaster, since any design-flaw failure in a secondary O-ring when the primary is distressed would cause a catastrophe. Having an estimate of a specific number of primary O-rings which fail would then be proportional to the probability of the catastrophe. The use of the binary `distress` outcome, however, only estimates if at least one O-ring will fail without regard to how many. Still, because of its simpler nature it can potentially be more precise when the number of observations is so low. Therefore, the full model will be used to provide a primary estimate of the disaster's probability, with the binary model used as a spot-check against its results.
 
-There are two explanatory variables of interest, `Temp` and `Pressure`. To test whether either of these are significant, a series of three models will be created.
+There are two explanatory variables of interest, temperature and pressure. To test whether either of these are significant, a series of three models will be created.
 
 $$logit(\pi) = \beta_0$$
-The first, shown above, will only include an intercept and serve as the null hypothesis where neither `Temp` nor `Pressure` have a relationship with O-ring distress. This equivalent to $\beta_{Temp} = \beta_{Pressure} = 0$. 
+The first, shown above, will only include an intercept and serve as the null hypothesis where neither temperature nor pressure have a relationship with O-ring distress. This equivalent to $\beta_{T} = \beta_{P} = 0$. 
 
 As common with Binomial distributions, a logit link function is used to relate the dependent and independent variables. The logit is defined as $logit(\pi) = ln(\frac{\pi}{1 - \pi})$ where $\pi$ is the probability of the outcome of interest. In the full model, this is the probability of failure of a single O-ring while in the binary model it is the probability of failure in at least one O-ring in a launch.
 
 $$logit(\pi) = \beta_0 + \beta_{T}*T$$
-The second, shown above, will include `Temp` as the sole independent variable denoted by $T$. This is motivated by Morton Thiokol's pre-launch investigation of O-ring condition deteriorating at lower temperatures using the same dataset. Later, it will be shown how their mistakes in statistical modeling lead to an underestimate of the probability of catastrophe. 
+The second, shown above, will include temperature as the sole independent variable denoted by $T$. This is motivated by Morton Thiokol's pre-launch investigation of O-ring condition deteriorating at lower temperatures using the same dataset. Later, it will be shown how their mistakes in statistical modeling lead to an underestimate of the probability of catastrophe. 
 
 $$logit(\pi) = \beta_0 + \beta_{T}*T + \beta_{P}*P$$
-Finally, the `Pressure` $P$ will be included along with $T$ in the third model to see if both environmental conditions are also significantly related to O-ring distress. 
+Finally, the pressure $P$ will be included along with $T$ in the third model to see if both environmental conditions are also significantly related to O-ring distress. 
 
 ```{r}
 # Null hypothesis, no relationship between env and o-rings
@@ -238,12 +243,6 @@ binom_or <- exp(c*binom_temp[["coefficients"]][["Temp"]])
 
 For a 10°F decrease in temperature, the OR would be about `r round(binary_or, 1)` in the binary model and `r round(binom_or, 1)` in the full model. Put into context, this implies that with a 10°F lower temperature the odds of *any* O-ring failure increases by `r round(binary_or, 1)` and the odds of a specific O-ring failure increases by `r round(binom_or, 1)`. This change is irrespective of the starting temperature, and as the change in temperature grows more negative then the odds of O-ring failure will continue to increase.
 
-```{r}
-# calculate Wald standard errors for model coefficients
-binary_se <- sqrt(diag(vcov(binary_temp)))
-binom_se <- sqrt(diag(vcov(binom_temp)))
-```
-
 For future plotting, visualization of confidence intervals will sometimes be included. While the previous hypothesis tests were LRTs, when this is done the Wald confidence intervals will be used instead.
 
 ```{r, warning = FALSE}
@@ -259,13 +258,10 @@ binom_prob <- predict(object = binom_temp, newdata = temps,
 # pi values
 binary_pis <- binary_prob$fit
 binom_pis <- binom_prob$fit
-# standard errors
-binary_ses <- binary_prob$se.fit
-binom_ses <- binom_prob$se.fit
 
 # 2.5th percentile
-binary_lower_ci <- binary_pis - qnorm(p = 1 - alpha/2)*binary_prob$se
-binom_lower_ci <- binom_pis - qnorm(p = 1 - alpha/2)*binom_prob$se
+binary_lower_ci <- binary_pis - qnorm(p = 1 - alpha/2)*binary_prob$se.fit
+binom_lower_ci <- binom_pis - qnorm(p = 1 - alpha/2)*binom_prob$se.fit
 # 97.5th percentile
 binary_upper_ci <- binary_pis + qnorm(p = 1 - alpha/2)*binary_prob$se
 binom_upper_ci <- binom_pis + qnorm(p = 1 - alpha/2)*binom_prob$se
@@ -297,6 +293,7 @@ ggplot() +
   xlab("Temperature (°F)") + 
   geom_hline(yintercept = 1.0, linetype = "dotted") +
   geom_hline(yintercept = 0.0, linetype = "dotted") +
+  geom_vline(xintercept = 36, linetype = "solid") +
   geom_point(data = d, aes(x = Temp, y = ifelse(distress==TRUE, 1, 0)), 
              shape = 17) +
   scale_color_identity(name = "Model",
@@ -306,23 +303,37 @@ ggplot() +
 
 ```
 
-Shown above in *Figure 4*, the estimated probability of any O-ring failure is close to 1 at low temperatures, including the temperature at which the Challenger launched at.
+**Figure 4** shows the probability of O-ring failure from both models over a range of temperatures. The Wald confidence intervals with $\alpha$ = 0.05 are shown as dotted lines for each model. Previous Shuttle launches are also included depending whether they did or did not have at least one O-ring failure, which is the dependent variable in the binary model. Finally, the vertical line represents the launch temperature of the *Challenger* disaster of 36°F.
 
-From *Figure 4* we also observe that the width of the confidence interval (CI) increases gradually until ~55°F before decreasing. This is due to the fact that there are no ground truth observations below 50°F, and that the data is an approximation of the true distribution. Hence, there is a greater amount of sampling variance in $\hat{\pi}$ at these low temperatures.
+As described previously the binary case represents the probability that *any* of the six O-rings will fail during launch, while the full case represents the probability of a single O-ring within the six failing. Shown earlier with the OR, a decrease in temperature generally increases the probability of O-ring failure in both models. This is visualized here as the probabilities from both models increase at changing rates as temperature decreases. The binary model has a larger increase in probability at moderate temperatures than the full model, which is intuitive as it only tracks whether at least one out of six O-rings will fail rather than the probability of a single specific O-ring. 
+
+The width of the Wald confidence intervals generally increase in the full model as temperature decreases, whereas in the binary model there is an increase and then decrease as temperatures continue to lower. At the launch temperature of 36°F the width is extremely small in the binary model, representing high confidence that at least one O-ring will fail. The continued enlargement of the confidence interval of the full model occurs due to a lack of observations at lower temperatures, coupled with the predicted probabilities being in the middle of the bounds of 0 and 100%.
 
 ```{r}
-ggplot(final_temp, aes(pi)) +
-  geom_histogram(binwidth = .1, color='black', fill = "black", alpha=0.5) + 
-  xlim(0,1) + 
-  ylim(0,10) +
-  ggtitle("Figure 5. Count Distribution of Predicted Probabilities") +
-  xlab("Predicted Probability") +
-  ylab("Count")
+binwidth <- 0.1
+
+ggplot() +
+  geom_histogram(data = binary_df, mapping = aes(x = pi, fill = binary_color),
+    binwidth = binwidth, center = binwidth/2, alpha=0.5, show.legend = TRUE) + 
+  geom_histogram(data = binom_df, mapping = aes(x = pi, fill = binom_color),
+    binwidth = binwidth, center = binwidth/2, alpha=0.5, show.legend = TRUE) + 
+  ggtitle("Figure 5. Distribution of Predicted Probabilities") +
+  xlab(expression(hat(pi))) + ylab("Count") +
+  scale_x_continuous(breaks = seq(0, 1, 0.1)) + ylim(0,30) +
+  scale_fill_identity(name = "Model",
+                      labels = c("Binary", "Full"),
+                      breaks = c(binary_color, binom_color),
+                      guide = "legend")
 ```
 
-Moreover, the Wald interval assumes the outcome variable follows a normal distribution and has a large sample size, which is not true and demonstrated by *Figure 5* above. Shown in *Figure 5*, $\hat{\pi}$ has fewer observations towards the center of its range, with more on the edges. This is almost the opposite of a standard normal distribution, where the median value is the most often observed. Hence, the resulting interval is broader in general.
+The validity of the Wald intervals can be examined via **Figure 5**. Specifically, the Wald interval assumes the outcome variable follows a normal distribution and has a large sample size. Earlier in the exercise, however, a Binomial distribution was assumed for a more appropriate and useful model. Also as noted earlier, Space Shuttle launches are rare events and the overall size of the dataset is small at less than thirty observations. 
 
-Next, the expected number of failures as a function of temperature can be calculated.
+The effect of these differences can be seen in **Figure 5** where $\hat{\pi}$ has fewer observations towards the center of its range, with a greater number on its edges. This is true for both the binary and full models. However, this is the opposite of a normal distribution where the median value is the most often observed. Combined with the previous differences, the Wald assumptions are not well met and it is likely they are not an accurate estimate. With all of these differences, it is unlikely that Wald intervals should be considered precise estimates of the standard error. Instead, they should only be interpreted as providing a general sense of how error varies over the domain of the inputs and range of the output.
+
+Back in **Figure 4**, binary model predicts that at the launch temperature of the *Challenger* there is a near guarantee that at least one O-ring will fail. The full model likewise predicts a high probability of each individual O-ring failing at nearly 75%. With the O-rings being assumed IID as required for the Binomial distribution, the expected number of O-ring failures on a single launch is then given by:
+
+$$E[Y] = n * p = 6 * \hat{\pi}(T)$$
+where *n* = 6 from the six IID O-rings on each launch and *p* = $\hat{\pi}(T)$ is the estimated probability of an individual O-ring failing at a specific temperature as given by the full model.
 
 ```{r}
 # This function calculates the maximum number of failures at a specified probability of a single failure
