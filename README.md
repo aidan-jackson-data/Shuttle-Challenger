@@ -2,9 +2,9 @@
 
 Authors: [Aidan Jackson](https://github.com/aidan-jackson-data) | [Sandip Panesar](https://github.com/spanesarmids) | [Devesh Khandelwal](https://github.com/devesh-k)
 
-This notebook investigates the safety record of the Space Shuttle program in the lead up to the *Challenger* disaster of 1986. With data analyzed before launch, the probability of a catastrophic failure is found to be much higher than originally believed due to mistakes in choice of statistical modeling.
+This notebook investigates the safety record of the Space Shuttle program in the lead up to the *Challenger* disaster of 1986. With data analyzed before launch, the probability of a catastrophic failure is found to be three times higher than when replicating original methodology due to mistakes in choice of statistical modeling.
 
-This was originally part of the W271 Statistical Methods for Discrete Response, Time Series, and Panel Data course in the Master of Information and Data Science program at University of California, Berkeley. The exercise in turn was based on a previous 1989 paper on the same topic, published in the Journal of the American Statistical Association and included in this repo as a pdf.<sup>[1]</sup>
+This was originally part of the W271 Statistical Methods for Discrete Response, Time Series, and Panel Data course in the Master of Information and Data Science program at University of California, Berkeley. The exercise in turn was based on a previous 1989 paper on the same topic, published in the Journal of the American Statistical Association.<sup>[1]</sup>
 
 | File      | Description |
 | :----------- | :----------- |
