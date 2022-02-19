@@ -271,7 +271,7 @@ binary_df <- data.frame(temp = temps$Temp, pi = binary_pis,
 binom_df <- data.frame(temp = temps$Temp, pi = binom_pis, 
                         lwr = binom_lower_ci, upr = binom_upper_ci)
 
-binary_color <- "red"
+binary_color <- "darkgreen"
 binom_color <- "blue"
 
 ggplot() + 
@@ -307,7 +307,88 @@ ggplot() +
 
 As described previously the binary case represents the probability that *any* of the six O-rings will fail during launch, while the full case represents the probability of a single O-ring within the six failing. Shown earlier with the OR, a decrease in temperature generally increases the probability of O-ring failure in both models. This is visualized here as the probabilities from both models increase at changing rates as temperature decreases. The binary model has a larger increase in probability at moderate temperatures than the full model, which is intuitive as it only tracks whether at least one out of six O-rings will fail rather than the probability of a single specific O-ring. 
 
-The width of the Wald confidence intervals generally increase in the full model as temperature decreases, whereas in the binary model there is an increase and then decrease as temperatures continue to lower. At the launch temperature of 36°F the width is extremely small in the binary model, representing high confidence that at least one O-ring will fail. The continued enlargement of the confidence interval of the full model occurs due to a lack of observations at lower temperatures, coupled with the predicted probabilities being in the middle of the bounds of 0 and 100%.
+At the launch temperature of the *Challenger*, the binary model predicts there is a near guarantee that at least one O-ring will fail. The full model likewise predicts a high probability of each individual O-ring failing at nearly 75%. With the O-rings being assumed IID as required for the Binomial distribution, the expected number of O-ring failures on a single launch is then given by:
+
+$$E[Y] = n * p = 6 * \hat{\pi}(T)$$
+where *n* = 6 from the six IID O-rings on each launch and *p* = $\hat{\pi}(T)$ is the estimated probability of an individual O-ring failing at a specific temperature as given by the full model. Again, by design only the full model can estimate how many O-rings on a given launch may fail as the binary model is only useful for understanding if *at least* one O-ring will fail, without regard to the total number.
+
+The key feature of Morton Thiokol's original analysis was that all launches which had zero O-ring failures were omitted.$^{[1]}$ This was justified by assuming they had nothing to offer to an understanding why O-rings may fail, or if temperature could be related. However, to falsify the claim that temperature is related to O-ring failure, both successes and failures of O-rings must be considered. Attempting to do so only based on examples of O-rings which failed, or conversely O-rings which did not fail, is impossible. Especially when a causal effect is suspected, an analysis which attempts to do so does not meet fundamental criteria of science. 
+
+```{r}
+d_morton <- d[d$O.ring > 0, ]
+binom_temp_morton <- glm(formula = O.ring.fraction ~ Temp, data = d_morton, 
+                         family = binomial(link = logit), weights = Number)
+binom_prob_morton <- predict(object = binom_temp_morton, newdata = temps,
+                             type='response', se=TRUE)
+binom_pis_morton <- binom_prob_morton$fit
+binom_lower_ci_morton <- binom_pis_morton - 
+  qnorm(p = 1 - alpha/2)*binom_prob_morton$se.fit
+binom_upper_ci_morton <- binom_pis_morton + 
+  qnorm(p = 1 - alpha/2)*binom_prob_morton$se.fit
+binom_df_morton <- data.frame(temp = temps$Temp, pi = binom_pis_morton, 
+                              lwr = binom_lower_ci_morton, 
+                              upr = binom_upper_ci_morton)
+binom_color_morton <- "red"
+```
+
+An identical subset of the launch data as used by Morton Thiokol is created above. With this, the same structure of the full model can be fit using to determine how it may impact analysis. 
+
+```{r, warning = FALSE}
+mode <- function(v) {
+  #' Function to find the statistical mode of a vector and return the result
+  #' Inputs:
+  #'  vector v: vector to find the mode of
+  #' Outputs:
+  #'  statistical mode of the vector v
+   uniqv <- unique(v)
+   return(uniqv[which.max(tabulate(match(v, uniqv)))])
+}
+
+num_O_rings <- mode(d$Number)
+
+# estimated number of failed O-rings by temperature
+binom_df$num_failed_est <- num_O_rings*binom_df$pi
+binom_df$num_failed_lwr <- num_O_rings*binom_df$lwr
+binom_df$num_failed_upr <- num_O_rings*binom_df$upr
+binom_df_morton$num_failed_est <- num_O_rings*binom_df_morton$pi
+binom_df_morton$num_failed_lwr <- num_O_rings*binom_df_morton$lwr
+binom_df_morton$num_failed_upr <- num_O_rings*binom_df_morton$upr
+
+ggplot() + 
+  geom_line(data = binom_df, 
+            mapping = aes(x = temp, y = num_failed_est, color = binom_color)) + 
+  geom_line(data = binom_df, aes(x = temp, y = num_failed_lwr), 
+            color = binom_color, linetype = "dotted") + 
+  geom_line(data = binom_df, aes(x = temp, y = num_failed_upr),
+            color = binom_color, linetype = "dotted") +
+  geom_line(data = binom_df_morton, 
+            mapping = aes(x = temp, y = num_failed_est, 
+                          color = binom_color_morton)) + 
+  geom_line(data = binom_df_morton, aes(x = temp, y = num_failed_lwr), 
+            color = binom_color_morton, linetype = "dotted") + 
+  geom_line(data = binom_df_morton, aes(x = temp, y = num_failed_upr),
+            color = binom_color_morton, linetype = "dotted") +
+  ggtitle("Figure 5. Expected Number of O-Ring Incidents by Temperature") + 
+  ylab("Number of O-Ring Failures per Launch") + xlab("Temperature (°F)") + 
+  geom_point(data = d, mapping = aes(x = Temp, y = O.ring), shape = 17) +
+  geom_vline(xintercept = 36, linetype = "solid") +
+  geom_hline(yintercept = num_O_rings, linetype = "dotted") +
+  geom_hline(yintercept = 0, linetype = "dotted") + ylim(0, num_O_rings) + 
+  scale_color_identity(name = "Full Model",
+                       labels = c("Subset Data", "Full Data"),
+                       breaks = c(binom_color_morton, binom_color),
+                       guide = "legend")
+```
+
+**Figure 5** shows the number of predicted O-ring failures per launch over a range of temperatures, along with the Wald confidence intervals. The two curves are both generated from the full model, one which uses only the data subset Morton Thiokol considered and one on the full data. Like **Figure 4**, the vertical line indicates the launch temperature on the morning of the *Challenger* disaster of 36 °F. 
+
+Most notably, using only the subset data implies that temperature is not related to O-ring failure. Instead, the predicted number of failures is constant around one. At higher and lower temperatures the Wald confidence interval grows wider, but this is due to a lack of observations outside of the six which remain. This also highlights that in addition to being biased, this subset is also incredibly small. When already starting with rare events such as Space Shuttle launches, any further reduction in dataset size must be well motivated. As a result, with only six observations and two parameters in the model, the available degrees of freedom are nearly exhausted.
+
+On the other hand, the full model with all data tracks previous Shuttle launches well. The only point which does not fit this curve is the observation with two O-ring failures at a temperature of about ~75°F. Even though this point is far from the predictions of the model, it does not appear to have skewed its fit. 
+
+Importantly, the model with all data predicts that at about four out of the six primary O-rings would fail at the launch temperature of the *Challenger*. This is an key result, as no previous launch had greater than two O-ring failures observed. As mentioned earlier, these six primary O-rings were intended to be redundant with six secondary O-rings. However, early in the Shuttle program it was known that a phenomena specific to the secondary O-rings could occur which rendered them useless at the start of each launch. If this happened at the same time as a primary O-ring failed, then it was already predicted that the result would be a catastrophe. Therefore, with at least four primary O-rings expected to fail at launch, the *Challenger* disaster would only have been averted if all four of the secondary O-rings to these did not also start the launch non-functional. 
+
+Still, this estimate must be qualified by the large confidence interval ranging from one to all six primary O-rings failing. In both **Figures 4** and **5**, the width of the Wald confidence intervals generally increase as temperature decreases in the full model. In the binary model of **Figure 4**, however, the confidence interval grows and then shrinks as temperatures decreases. In fact, at the launch temperature of 36°F the width is extremely small in the binary model, representing high confidence that at least one O-ring will fail. However, this is likely an example of a "zero-width" interval being estimated due to failing to meet the Wald interval assumptions. The continued growing of the confidence interval of the full model occurs due to a lack of observations at lower temperatures, coupled with the predicted probabilities being in the middle of the 0 and 100% bounds.
 
 ```{r}
 binwidth <- 0.1
@@ -326,69 +407,11 @@ ggplot() +
                       guide = "legend")
 ```
 
-The validity of the Wald intervals can be examined via **Figure 5**. Specifically, the Wald interval assumes the outcome variable follows a normal distribution and has a large sample size. Earlier in the exercise, however, a Binomial distribution was assumed for a more appropriate and useful model. Also as noted earlier, Space Shuttle launches are rare events and the overall size of the dataset is small at less than thirty observations. 
+The validity of the Wald intervals can be examined via **Figure 5**. Specifically, the Wald interval assumes the outcome variable follows a normal distribution and has a large sample size. Earlier in the exercise, however, a Binomial distribution was assumed for a more appropriate and useful model. While Binomial distributions resemble normal distributions when *n* is large and *p* is near 0.5, these circumstances are not usually met and lead to "chaotic coverage" of the Wald interval.$^{[3]}$ Also as noted earlier, Space Shuttle launches are rare events and the overall size of the dataset is small at less than thirty observations. 
 
-The effect of these differences can be seen in **Figure 5** where $\hat{\pi}$ has fewer observations towards the center of its range, with a greater number on its edges. This is true for both the binary and full models. However, this is the opposite of a normal distribution where the median value is the most often observed. Combined with the previous differences, the Wald assumptions are not well met and it is likely they are not an accurate estimate. With all of these differences, it is unlikely that Wald intervals should be considered precise estimates of the standard error. Instead, they should only be interpreted as providing a general sense of how error varies over the domain of the inputs and range of the output.
+The effect of these differences can be seen in **Figure 5** where $\hat{\pi}$ has fewer observations towards the center of its range, with a greater number on its edges. This is true for both the binary and full models. However, this is the opposite of a normal distribution where the median value is the most often observed. Combined with the previous differences, the Wald assumptions are not well met and it is likely they are not an accurate estimate. With all of these differences, the Wald intervals should not be considered precise estimates of the standard error.
 
-Back in **Figure 4**, binary model predicts that at the launch temperature of the *Challenger* there is a near guarantee that at least one O-ring will fail. The full model likewise predicts a high probability of each individual O-ring failing at nearly 75%. With the O-rings being assumed IID as required for the Binomial distribution, the expected number of O-ring failures on a single launch is then given by:
-
-$$E[Y] = n * p = 6 * \hat{\pi}(T)$$
-where *n* = 6 from the six IID O-rings on each launch and *p* = $\hat{\pi}(T)$ is the estimated probability of an individual O-ring failing at a specific temperature as given by the full model.
-
-```{r}
-# This function calculates the maximum number of failures at a specified probability of a single failure
-get_ring_failure <- function(est_prob){
-  # This function is from the paper Dalal et al.
-  mu = 6.0*est_prob
-  return(mu)
-}
-```
-
-```{r, warning=FALSE}
-# Now calculate expected number of incidents 
-
-# Create vector of predictions using model_h0 (i.e. the model without pressure), also specify "se=TRUE" for plotting purposes. 
-temp_exps <- predict(object=fail_model, newdata=temps, type='response', se=TRUE)
-
-# Pi values
-pi_hat <- temp_exps$fit
-
-# SEs
-pi_hat_ses <- temp_exps$se.fit
-
-#calculating failure
-failure_hat <- apply(X = data.frame(pi_hat), MARGIN = 1, FUN = get_ring_failure)
-
-#creating a data frame
-final_temp_exp <- data.frame(temps$Temp, pi_hat, failure_hat)
-colnames(final_temp_exp) <- c('Temp', 'pi_hat', 'failure_hat')
-
-#creating a subset of the original df to only retain relevant cols:
-d_trunc <- d[,c("Temp","O.ring")]
-
-#merging the data frames to create a final plot:
-final_temp_exp = merge(x = final_temp_exp, y = d_trunc, by = "Temp",
-                                 all.x = TRUE)
-
- ggplot() + 
-  geom_line(data=final_temp_exp, aes(x=Temp, y= failure_hat)) + 
-  ggtitle("Figure 6. Expected Number of O-Ring Incidents by Temperature") + 
-  ylab("No. Incidents") + xlab("Temp (F°)") + 
-   geom_point(data = final_temp_exp , aes(x=Temp, y= O.ring ), shape = 17) + 
-   labs(colour = "final_temp_exp$O.ring")
-
-```
-
-*Figure 6* above shows that it is expected that more O-ring failures than previously observed would have occurred at the Challenger's launch temperature. This should have caused serious concern for launching at the temperature of that day had this analysis been carried out ahead of time. The only point which does not fit this curve well is the observation with two O-ring failures at a temperature of about ~75°F.
-
-(d) The temperature was 31° at launch for the Challenger in 1986. Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval. Discuss what assumptions need to be made in order to apply the inference procedures.
-
-We've already calculated the Wald intervals in the previous section. As shown before, a Wald test relies on following assumptions:
-
-1. The underlying data is normally distributed. 
-2. We have a large sample size.
-
-As we have seen in the previous subsection, $\hat{\pi}$ is not normally distributed and there is a small sample size. Therefore, in this section we'll look at estimating the CI with the Likelihood Ratio Test (LRT) using the model that we previously fitted. Unlike the Wald interval, the LRT assumes that the the test statistic has a `chi.sq` distribution with 1 degree of freedom.
+As done with the previous hypothesis tests, the profile LR confidence interval can be constructed instead of the Wald. Unlike the Wald, the LR confidence interval assumes a $\chi^2$ distribution in the outcome. This is much more easily approximated by the Binomial distribution the data was assumed to follow for modeling.
 
 ```{r}
 beta_0 <- fail_model$coefficients[1]
@@ -602,6 +625,7 @@ Citation:
 
 [2] Presidential Commission on the Space Shuttle *Challenger* Accident (1986), *Report of the Presidential Commission on the Space Shuttle Challenger Accident* (Vols. 1 & 2), Washington, D.C.: Author. 
 
+[3] Lawrence D. Brown, T. Tony Cai, Anirban DasGupta "Interval Estimation for a Binomial Proportion," Statistical Science, Statist. Sci. 16(2), 101-133, (May 2001)
 
 
 
