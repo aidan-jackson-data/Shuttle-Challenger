@@ -4,8 +4,7 @@ subtitle: "Statistical Modeling for Critical Decisions"
 author : "Aidan Jackson, Sandip Panesar, Devesh Khandelwal"
 output: 
   pdf_document:
-  toc: true
-  number_sections: true
+    toc: true
 fontsize: 11pt
 geometry: margin=1in
 urlcolor: blue
@@ -17,7 +16,7 @@ urlcolor: blue
 
 ## Summary
 
-This exercise examines the Space Shuttle *Challenger*'s 1986 disaster using the previous safety record of the Space Shuttle Program. The probability of O-ring failures at various launch temperatures are modeled to make a prediction for the conditions on the morning of the disaster. It is found that the probability of a catastrophic failure is XX%, over XX times higher than when using the methods of the original estimate. The Rogers Commission, tasked with investigating the accident, noted that this underestimate occurred due to omitting launch data where no O-ring damage was found.$^{[2]}$ The original estimate procedure was used by [Morton Thiokol](https://en.wikipedia.org/wiki/Thiokol), a contractor to NASA and producer of the O-ring involved component that failed. 
+This exercise examines the Space Shuttle *Challenger*'s 1986 disaster using the previous safety record of the Space Shuttle Program. The probability of O-ring failures at various launch temperatures are modeled to make a prediction for the conditions on the morning of the disaster. It is found that the probability of a catastrophic failure is 34%, over three times higher than when using the methods of the original estimate. The Rogers Commission, tasked with investigating the accident, noted that this underestimate occurred due to omitting launch data where no O-ring damage was found.$^{[2]}$ The original estimate procedure was used by [Morton Thiokol](https://en.wikipedia.org/wiki/Thiokol), a contractor to NASA and producer of the O-ring involved component that failed. 
 
 This work was originally completed as part of the W271 Statistical Methods for Discrete Response, Time Series, and Panel Data course in the Master of Information and Data Science program at University of California, Berkeley. The exercise in turn was based on a previous 1989 paper on the same topic, originally published in the Journal of the American Statistical Association and included in this repo as a pdf.$^{[1]}$
 
@@ -40,6 +39,7 @@ Without any additional statistics, when the Challenger started its Winter mornin
 ```{r, message = FALSE}
 library(data.table)
 library(ggplot2)
+library(grid)
 library(gridExtra)
 library(dplyr)
 library(mcprofile)
@@ -248,6 +248,7 @@ For future plotting, visualization of confidence intervals will sometimes be inc
 ```{r, warning = FALSE}
 # create sequence of temperatures to show on plot
 temps <- data.frame(Temp = seq(30,82,1))
+temp_challenger <- 36
 
 # make predictions on the sequence of temperatures
 binary_prob <- predict(object = binary_temp, newdata = temps, 
@@ -293,7 +294,7 @@ ggplot() +
   xlab("Temperature (°F)") + 
   geom_hline(yintercept = 1.0, linetype = "dotted") +
   geom_hline(yintercept = 0.0, linetype = "dotted") +
-  geom_vline(xintercept = 36, linetype = "solid") +
+  geom_vline(xintercept = temp_challenger, linetype = "solid") +
   geom_point(data = d, aes(x = Temp, y = ifelse(distress==TRUE, 1, 0)), 
              shape = 17) +
   scale_color_identity(name = "Model",
@@ -371,7 +372,7 @@ ggplot() +
   ggtitle("Figure 5. Expected Number of O-Ring Incidents by Temperature") + 
   ylab("Number of O-Ring Failures per Launch") + xlab("Temperature (°F)") + 
   geom_point(data = d, mapping = aes(x = Temp, y = O.ring), shape = 17) +
-  geom_vline(xintercept = 36, linetype = "solid") +
+  geom_vline(xintercept = temp_challenger, linetype = "solid") +
   geom_hline(yintercept = num_O_rings, linetype = "dotted") +
   geom_hline(yintercept = 0, linetype = "dotted") + ylim(0, num_O_rings) + 
   scale_color_identity(name = "Full Model",
@@ -386,9 +387,11 @@ Most notably, using only the subset data implies that temperature is not related
 
 On the other hand, the full model with all data tracks previous Shuttle launches well. The only point which does not fit this curve is the observation with two O-ring failures at a temperature of about ~75°F. Even though this point is far from the predictions of the model, it does not appear to have skewed its fit. 
 
-Importantly, the model with all data predicts that at about four out of the six primary O-rings would fail at the launch temperature of the *Challenger*. This is an key result, as no previous launch had greater than two O-ring failures observed. As mentioned earlier, these six primary O-rings were intended to be redundant with six secondary O-rings. However, early in the Shuttle program it was known that a phenomena specific to the secondary O-rings could occur which rendered them useless at the start of each launch. If this happened at the same time as a primary O-ring failed, then it was already predicted that the result would be a catastrophe. Therefore, with at least four primary O-rings expected to fail at launch, the *Challenger* disaster would only have been averted if all four of the secondary O-rings to these did not also start the launch non-functional. 
+Importantly, the model with all data predicts that at about four out of the six primary O-rings would fail at the launch temperature of the *Challenger*. This is an key result, as no previous launch had greater than two O-ring failures observed. As mentioned earlier, these six primary O-rings were intended to be redundant with six secondary O-rings. However, early in the Shuttle program it was known that a phenomena specific to the secondary O-rings could occur which rendered them useless at the start of each launch. If this happened at the same time as a primary O-ring failed, then it was already known that the result would be a catastrophe. Therefore, with at least four primary O-rings expected to fail at launch, the *Challenger* disaster would only have been averted if all four of the secondary O-rings to these did not also start the launch non-functional. 
 
-Still, this estimate must be qualified by the large confidence interval ranging from one to all six primary O-rings failing. In both **Figures 4** and **5**, the width of the Wald confidence intervals generally increase as temperature decreases in the full model. In the binary model of **Figure 4**, however, the confidence interval grows and then shrinks as temperatures decreases. In fact, at the launch temperature of 36°F the width is extremely small in the binary model, representing high confidence that at least one O-ring will fail. However, this is likely an example of a "zero-width" interval being estimated due to failing to meet the Wald interval assumptions. The continued growing of the confidence interval of the full model occurs due to a lack of observations at lower temperatures, coupled with the predicted probabilities being in the middle of the 0 and 100% bounds.
+## Error Estimation
+
+Still, this estimate must be qualified by the large confidence interval ranging from one to all six primary O-rings failing. In both **Figures 4** and **5**, the width of the Wald confidence intervals generally increases as temperature decreases in the full model. In the binary model of **Figure 4**, however, the confidence interval grows and then shrinks as temperatures decreases. In fact, at the launch temperature of 36°F the width is extremely small in the binary model. This represents high confidence that at least one O-ring will fail. However, this is likely an example of a "zero-width" interval being estimated due to failing to meet the Wald interval assumptions for a Binomial problem. The width of the confidence interval ranging to below zero and greater than one is a similar a demonstration of its failure in the current context. 
 
 ```{r}
 binwidth <- 0.1
@@ -400,7 +403,7 @@ ggplot() +
     binwidth = binwidth, center = binwidth/2, alpha=0.5, show.legend = TRUE) + 
   ggtitle("Figure 5. Distribution of Predicted Probabilities") +
   xlab(expression(hat(pi))) + ylab("Count") +
-  scale_x_continuous(breaks = seq(0, 1, 0.1)) + ylim(0,30) +
+  scale_x_continuous(breaks = seq(0, 1, binwidth)) + ylim(0,30) +
   scale_fill_identity(name = "Model",
                       labels = c("Binary", "Full"),
                       breaks = c(binary_color, binom_color),
@@ -409,217 +412,185 @@ ggplot() +
 
 The validity of the Wald intervals can be examined via **Figure 5**. Specifically, the Wald interval assumes the outcome variable follows a normal distribution and has a large sample size. Earlier in the exercise, however, a Binomial distribution was assumed for a more appropriate and useful model. While Binomial distributions resemble normal distributions when *n* is large and *p* is near 0.5, these circumstances are not usually met and lead to "chaotic coverage" of the Wald interval.$^{[3]}$ Also as noted earlier, Space Shuttle launches are rare events and the overall size of the dataset is small at less than thirty observations. 
 
-The effect of these differences can be seen in **Figure 5** where $\hat{\pi}$ has fewer observations towards the center of its range, with a greater number on its edges. This is true for both the binary and full models. However, this is the opposite of a normal distribution where the median value is the most often observed. Combined with the previous differences, the Wald assumptions are not well met and it is likely they are not an accurate estimate. With all of these differences, the Wald intervals should not be considered precise estimates of the standard error.
+The effect of these differences can be seen in **Figure 5** where $\hat{\pi}$ has fewer observations towards the center of its range, with a greater number on its edges. This is true for both the binary and full models. However, this is the opposite of a normal distribution where the median value is the most often observed. With all of these differences, the Wald intervals should not be considered precise estimates of the standard error.
 
-As done with the previous hypothesis tests, the profile LR confidence interval can be constructed instead of the Wald. Unlike the Wald, the LR confidence interval assumes a $\chi^2$ distribution in the outcome. This is much more easily approximated by the Binomial distribution the data was assumed to follow for modeling.
+As done with the previous hypothesis tests, the profile LR confidence interval can be constructed instead of the Wald. Unlike the Wald, the LR confidence interval assumes a $\chi^2$ distribution in the outcome. This is much more easily approximated by the Binomial distribution the data was assumed to follow for modeling, as found when comparing a $\chi^2$ distribution to **Figure 5**.
 
 ```{r}
-beta_0 <- fail_model$coefficients[1]
-beta_1 <- fail_model$coefficients[2]
+beta_0 <- binom_temp$coefficients[1]
+beta_1 <- binom_temp$coefficients[2]
 
-# Create a K-matrix for temp = 31 degrees
+# create a K-matrix for challenger temperature
+K <- matrix(data = c(1, temp_challenger) , nrow = 1, ncol = 2)
 
-K <- matrix(data = c(1,31) , nrow = 1, ncol = 2)
+# calculate -2log(lambda)
+lc <- mcprofile(object = binom_temp, CM = K)
 
-# Calc -2log(lambda)
-lc <- mcprofile(object=fail_model, CM=K)
-ci_logit_profile <- confint(object=lc, level=0.95)
+# calculate confidence interval of logit based on likelihood
+ci_logit_profile <- confint(object = lc, level = 1 - alpha)
 
+# calculate confidence interval of probability based on logit
 interval <- exp(ci_logit_profile$confint)/(1 + exp(ci_logit_profile$confint))
 
 wald_int_profile <- wald(object=lc)
+wald_ci_exp <- confint(wald_int_profile , level = 1 - alpha)
 
-wald_ci_exp <- confint(wald_int_profile , level = .95)
+wald_lower_logit <- wald_ci_exp$confint$lower
+wald_upper_logit <- wald_ci_exp$confint$upper
 
-wald_lower_exp <- wald_ci_exp$confint$lower
-wald_upper_exp <- wald_ci_exp$confint$upper
-
-wald_interval_lower <- exp(wald_lower_exp)/(1 + exp(wald_lower_exp))
-wald_interval_upper <- exp(wald_upper_exp)/(1 + exp(wald_upper_exp))
+wald_lower_pi <- exp(wald_lower_logit)/(1 + exp(wald_lower_logit))
+wald_upper_pi <- exp(wald_upper_logit)/(1 + exp(wald_upper_logit))
 ```
 
-For the LRT test and at 31°F, the odds of any `O.ring` failure has a 95% confidence interval of `r interval$lower` and `r interval$upper`. The Wald test under the same conditions has the 95% confidence interval of any `O.ring` failure between `r wald_interval_lower` and `r wald_interval_upper`. This demonstrates that the LRT is more conservative than the Wald and should be preferred.
+At 36°F, the probability of an individual O-ring failing has a 95% LR confidence interval of `r round(100*interval$lower, 1)`% and `r round(100*interval$upper, 1)`%. The Wald confidence interval under the same conditions is `r round(100*wald_lower_pi, 1)`% and `r round(100*wald_upper_pi, 1)`%. While a small difference at this temperature, this demonstrates that the LR interval is more conservative than the Wald and should be preferred.
 
-(e) Rather than using Wald or profile LR intervals for the probability of failure, Dalal et al. (1989) use a parametric bootstrap to compute intervals. Their process was to (1) simulate a large number of data sets (n = 23 for each) from the estimated model of  Temp; (2) estimate new models for each data set, say and (3) compute at a specific temperature of interest. The authors used the 0.05 and 0.95 observed quantiles from the  simulated distribution as their 90% confidence interval limits. Using the parametric bootstrap, compute 90% confidence intervals separately at temperatures of 31° and 72°.27
+Dalal et al., the authors of the publication this exercise is based on, did not use Wald or LR methods to estimate error. Instead, they used a parametric bootstrap. Bootstrapping involves randomly varying a quantity of interest for many iterations, where a new outcome is calculated for each iteration. After many iterations, a distribution of possible results is generated. By the central limit theorem, this distribution is approximately normal. Once constructed, the distribution's variance can then be used as an estimate of uncertainty in the outcome as a function of the varied quantity.
 
-First, the calculations will be set up.
+Because one of the key features of this dataset is the low number of observations, at 23 total, it was assumed that this would be a primary contributor to error in a model's predictions. From this, a procedure was designed where each iteration would:
+- Sample the original dataset with replacement to create a new synthetic dataset of equal size (23 observations)
+- Fit a model with identical structure to the new dataset
+- Make a prediction using the new model at a temperature of interest
 
-```{r}
-bs_data_1 <- data.frame(c(31))
-colnames(bs_data_1) = 'Temp'
+After a large number of iterations, the variance in the predictions would then be used to construct the confidence interval at the given temperature. In this context, an accurate confidence interval for the temperature of the *Challenger*'s final launch at 36°F is desired. Because no prior observation was from such a low temperature, this also represents an estimate of the out-of-sample uncertainty. For comparison, the procedure is also repeated at a temperature of 70°F to demonstrate an in-sample estimate.
 
-bs_data_2 <- data.frame(c(72.27))
-colnames(bs_data_2) = 'Temp'
+```{r, warning = FALSE}
+temp_in_sample <- 70
+temps_of_interest <- data.frame('Temp' = c(temp_challenger, temp_in_sample))
 
-vector_pi <- NA
-vector_lower_ci <- NA
-vector_upper_ci <- NA
+vector_pi_challenger <- NA
+vector_pi_in_sample <- NA
 
-vector_pi2 <- NA
-vector_lower_ci2 <- NA
-vector_upper_ci2 <- NA
-
-suppressWarnings(for(i in 1:1000) {
+for(i in 1:1000) {
   
-  # generating data from repeated sampling, only temperature will be used
-  bootstrap_temps <- sample_n(d, size=23, replace=TRUE)$Temp
+  # generate new dataset from sampling with replacement
+  d_i <- sample_n(d, size = nrow(d), replace=TRUE)
   
-  # make predictions on data with original model
-  bootstrap_outcomes <- predict(object = fail_model, data = bootstrap_temps, 
-                                type = "response", family = binomial(link = "logit"))
+  # fit new model using new dataset
+  model <- glm(formula = O.ring.fraction ~ Temp, data = d_i, 
+               family = binomial(link = logit), weights = Number)
   
-  # put bootstrap data together for fitting new model
-  bootstrap_d <- data.frame("Temp" = bootstrap_temps, 
-                            "distress" = bootstrap_outcomes)
+  # make predictions using new model at temperatures of interest
+  preds_i <- predict(object = model, newdata = temps_of_interest, 
+                          type='response', se=TRUE)
   
-  # fit new model using bootstrapped data
-  model <- glm(formula = distress ~ Temp, 
-               data = bootstrap_d, family = binomial(link = logit))
-  
-  # make predictions using bootstrap model at temperatures of interest
-  prediction_1 <- predict(object=model, 
-                          newdata=bs_data_1, type='response', se=TRUE)
-  vector_pi[i] <- prediction_1$fit
-  #note that we are supposed to do a 90% CI
-  vector_upper_ci[i] <- prediction_1$fit + 1.645*prediction_1$se.fit
-  vector_lower_ci[i] <- prediction_1$fit - 1.645*prediction_1$se.fit
-  #doing the same for 72 degrees
-  prediction_2 <- predict(object=model, 
-                          newdata=bs_data_2, type='response', se=TRUE)
-  vector_pi2[i] <- prediction_2$fit
-  vector_upper_ci2[i] <- prediction_2$fit + 1.645*prediction_2$se.fit
-  vector_lower_ci2[i] <- prediction_2$fit - 1.645*prediction_2$se.fit
-})
+  vector_pi_challenger[i] <- preds_i$fit[1]
+  vector_pi_in_sample[i] <- preds_i$fit[2]
+}
 
-temp_30_pis <- data.frame(data.frame(vector_pi), 
-                          data.frame(vector_lower_ci), 
-                          data.frame(vector_upper_ci))
-colnames(temp_30_pis) = c('pi','lwr', 'upr')
+# estimate the standard error
+se_challenger <- sd(vector_pi_challenger)
+se_in_sample <- sd(vector_pi_in_sample)
 
-temp_72_pis <-data.frame(data.frame(vector_pi2), 
-                         data.frame(vector_lower_ci2), 
-                         data.frame(vector_upper_ci2))
-colnames(temp_72_pis) = c('pi','lwr', 'upr')
+# estimate the mean
+mean_challenger <- mean(vector_pi_challenger)
+mean_in_sample <- mean(vector_pi_in_sample)
 
-#calculating the standard deviations
-
-pi_hat30_std_dev <- sd(temp_30_pis$pi)
-pi_hat72_std_dev <- sd(temp_72_pis$pi)
-
-#estimated mean
-mu_hat_30 <- mean(temp_30_pis$pi)
-mu_hat_72 <- mean(temp_72_pis$pi)
-
-alpha <- .1
-ci_30 <- mu_hat_30 + qnorm(p = c(alpha/2,1-alpha/2))*pi_hat30_std_dev
-ci_72 <- mu_hat_72 + qnorm(p = c(alpha/2,1-alpha/2))*pi_hat72_std_dev
+# estimate bootstrapped confidence intervals
+ci_challenger <- mean_challenger + qnorm(p = c(alpha/2, 1-alpha/2))*se_challenger
+ci_in_sample <- mean_in_sample + qnorm(p = c(alpha/2, 1-alpha/2))*se_in_sample
 ```
 
-Next, the figures will be created.
+Similar to before, the probability of an individual O-ring failing at the launch temperature of the *Challenger* was estimated via parametric bootstrap to be `r round(100*mean_challenger, 1)`%. The bootstrapped 95% confidence interval was `r round(100*ci_challenger[1], 1)`% and `r round(100*ci_challenger[2], 1)`%. At `r temp_in_sample`°F, the same method estimated the probability at `r round(100*mean_in_sample, 1)`% with a 95% confidence interval of `r round(100*ci_in_sample[1], 1)`% and `r round(100*ci_in_sample[2], 1)`%. Note that in both of these intervals, bounds extend beyond the limit of 0% and 100% similar to the Wald interval. Although bootstrapping has become popular in recent decades with the rise of computation power and simple application to many contexts, certain issues can still be encountered depending on the use case. 
 
 ```{r}
-# 30 degrees 
-plt_30 <- ggplot(data = temp_30_pis) +
-aes(x = pi) +
-geom_histogram(binwidth=0.01, fill="blue", color="blue", alpha=0.3) +
-geom_vline(xintercept = ci_30 , color = 'darkorange') + 
-labs(title = "Figure 7. Histogram of Bootstrapped Probabilities of Failure at 31°F", 
-     caption = ("Vertical lines denote the 90% CI")) +
-  ylab("Count, Logarithm") +
-  xlab(expression(pi)) +
-  scale_y_log10()
+df_bootstrap_challenger <- data.frame("pi" = vector_pi_challenger)
+df_bootstrap_in_sample <- data.frame("pi" = vector_pi_in_sample)
 
-#72 degrees
-plt_72 <- ggplot(data = temp_72_pis) +
-aes(x = pi) +
-geom_histogram(binwidth=0.01, fill="purple", color="purple", alpha=0.3) +
-geom_vline(xintercept = ci_72 , color = 'darkorange') + 
-labs(title = 
-       "Figure 8. Histogram of Bootstrapped Probabilities of Failure at 72.27°F", 
-     caption = ("Vertical lines denote the 90% CI")) +
-    ylab("Count") +
-  xlab(expression(pi))
+plt_c <- ggplot(data = df_bootstrap_challenger) +
+  aes(x = pi) +
+  geom_histogram(binwidth = binwidth, fill = "blue", color = "blue", 
+                 center = binwidth/2, alpha = 0.3) +
+  geom_vline(xintercept = ci_challenger, color = 'darkorange') + 
+  labs(title = "Figure 6a. 36°F") +
+  ylab("") + xlab("") +
+  scale_x_continuous(breaks = seq(0, 1, binwidth)) +
+  theme(plot.title = element_text(size = 7),
+        axis.text.x = element_text(size = 8, angle = 35))
 
-plt_30
-plt_72
+plt_is <- ggplot(data = df_bootstrap_in_sample) +
+  aes(x = pi) +
+  geom_histogram(binwidth = binwidth/5, fill = "purple", color = "purple", 
+                 center = binwidth/(5*2), alpha = 0.3) +
+  geom_vline(xintercept = ci_in_sample, color = 'darkorange') + 
+  labs(title = "Figure 6b. 70°F") +
+  ylab("") + xlab("") +
+  scale_x_continuous(breaks = seq(0, 1, binwidth/5)) +
+  theme(plot.title = element_text(size = 7),
+        axis.text.x = element_text(size = 8, angle = 35))
+
+grid.arrange(plt_c, plt_is, nrow = 1,
+             top = textGrob(
+               label = "Figure 6. Bootstrapped Probabilities of Failure"),
+             bottom = textGrob(label = expression(pi)),
+             left = textGrob(label = "Count", rot = 90))
 ```
 
-We can visualize a histogram of the results of the bootstrap (100,000 trials each) for 31°F in **Figure 7** and for 72°F in **Figure 8**. Using data in these figures, we can calculate that:
+**Figure 6** shows the bootstrapped probabilities of failure for a single O-ring at 36°F and 70°F. The confidence intervals determined from the distribution are also shown in orange for each temperature. The "parametric" nature of the bootstrap can be observed as both resemble a normal distribution, although the boundaries at 0% and 100% add a slight skew. However, these are both much more similar to normal distribution than what is shown in **Figure 5**, suggesting the bootstrap is more reliable than the Wald intervals even though both have similar boundary problems. 
 
-- The probability of an `O.ring` failure at 30°F are between `r ci_30[1] ` and `r ci_30[2] ` (with a 90% C.I.)
+## Linear Regression
 
-- The probability of an `O.ring` failure at 72.27°F are between `r ci_72[1] ` and `r ci_72[2] ` (with a 90% C.I.)
-
-While these probabilities may be calculated to sometimes be less than one or greater than zero, it is known their true bounds are between [0, 1].
-
-(f) Determine if a quadratic term is needed in the model for the temperature.
-
-We'll create another glm model with a quadratic term and then compare the two models with an anova test as below:
+While a Binomial distribution was assumed for the outcome and used with a logit link function, a simpler approach may have been to use only standard linear regression with a Gaussian distribution and identity link function. 
 
 ```{r}
-fail_model_quad <- glm(formula = distress ~ Temp + I(Temp^2), data = d,
-                       family = binomial(link = logit))
-anova_mod <- anova(fail_model, fail_model_quad , test = "Chisq")
+linear_model <- glm(O.ring.fraction ~ Temp, data = d, 
+                    family = gaussian(), weights = Number)
 
-p_val<- anova_mod$`Pr(>Chi)`[2]
+summary(linear_model)
 ```
 
-The p-value from the anova test is `r p_val`, which is fairly large and greater than 0.05. Thus, we conclude that there is not enough evidence that the quadratic model is an improvement over the the linear model. 
+Shown above, the linear model also finds that temperature is significant for the presence of a O-ring distress event. Like the previous models there is an inverse relationship between the two variables, where the likelihood of an O-ring failure increases as the temperature decreases. Specifically, with all else constant, decreasing the temperature by 10°F would increase the probability of an individual O-ring failure by ~7.9%.
 
-**Part 4 (10 points)**
+Even though a similar result is found, this model should not be used instead of the Binomial model. Chiefly, this is because the linear model does not have bounds on the output so that sometimes a probability greater than one or less than zero may be predicted. Although previous confidence intervals were found to have this problem, this was due to the calculation of the standard error and not the model itself. In this linear model, a probability of one is reached at about `r round((1-coef(linear_model)["(Intercept)"])/coef(linear_model)["Temp"], 2)`°F while a probability of zero is reached at about `r round((0-coef(linear_model)["(Intercept)"])/coef(linear_model)["Temp"], 2)`°F. Given that there were recorded launches both above and below these temperatures, this is a very undesirable property of the model.
 
-With the same set of explanatory variables in your final model, estimate a linear regression model. Explain the model results, conduct model diagnostics and assess the validity of the model assumptions.  Would you use the linear regression model or binary logistic regression in this case?  Explain why.
+In addition, the linear model assumes homoscedasticity. This means that the variance in the model's residuals should be constant both over the range of the output as well as the domain of its inputs. 
 
-```{r}
-linear_model <- glm(distress ~ Temp, data = d, family = gaussian())
-```
-
-Shown above, the linear model also finds that temperature is significant for the presence of a O-ring distress event. Like the previous models there is an inverse relationship between the two variables, where the likelihood of a distress event increases as the temperature decreases. Specifically, with all else constant, increasing the temperature by 1°F would decrease the probability of a distress event by ~3.74%.
-
-Even though a similar result is found, this model should not be used instead of the binary logistic regression model. This is because the linear model does not have bounds on the output, so that sometimes a probability greater than one or less than zero may be predicted. In this case, a probability of one is reached at about `r round((1-coef(linear_model)["(Intercept)"])/coef(linear_model)["Temp"], 2)`°F while a probability of zero is reached at about `r round((0-coef(linear_model)["(Intercept)"])/coef(linear_model)["Temp"], 2)`°F. Given that there were recorded launches both above and below these temperatures, this is an undesirable property of the model.
-
-In addition, the linear model assumes homoscedasticity, or that the variance in the model's residuals is constant both over the range of the output as well as the domain of its inputs. 
-
-```{r}
+```{r, message = FALSE}
 linear_model %>%
   ggplot(aes(x = linear_model$fitted.values, 
              y = sqrt(abs(linear_model$residuals/sd(linear_model$residuals))))) + 
   geom_point() + 
   stat_smooth(color="red", se=FALSE) +
   labs(
-    title = "Figure 9. Predicted Probabilities vs. Standardized Residuals",
+    title = "Figure 7. Predicted Probabilities vs. Standardized Residuals",
     x = "Predicted Values",
-    y = "sqrt(|Standardized Residuals|)")
+    y = "Standardized Residuals")
 ```
 
-Shown in *Figure 9*, the standardized residuals are not constant over the range of the output variable in the model. This does not meet the homoscedasticity assumption, because the output variable is itself a function of the input variables. This result was expected, however, as it can be derived that the variance in a random variable from a binomial distribution is a function of that variable itself, or $Var(\pi) \propto \pi*(1-\pi)$. It can be further seen that the maximum variance is observed around $\pi \approx 0.5$, which follows the prediction from the variance equation. Given that the homoscedasticity assumption is not met, there is further evidence of preferring the logistic model to the linear regression.
+Shown in **Figure 7**, the standardized residuals are not constant over the range of the output variable in the model. This does not meet the homoscedasticity assumption, because the output variable is itself a function of the input variables. This result was expected, however, as it can be shown that the variance in a random variable from a Binomial distribution is a function of itself, or $Var(\pi) \propto \pi*(1-\pi)$. It can be further seen in **Figure 7** that there is a general upward trend as $\pi \to 0.5$, which follows from the variance relationship. Given that the homoscedasticity assumption is not met, there is further evidence of preferring the logistic model to the linear regression.
 
-A final drawback of the linear model is that, as shown in its name, it only considers linear combinations of the input variables to predict the output variables. However, the logistic regression model also follows this linear combination form, and so is not any more or less desirable for this reason alone. However, given that in this scenario the previous two drawbacks were so large, the logistic regression model should be preferred instead. 
-
-**Part 5 (10 points)**
-
-Interpret the main result of your final model in terms of both odds and probability of failure. Summarize the final result with respect to the question(s) being asked and key takeaways from the analysis.
+## Summary
 
 The final model is the logistic regression which uses temperature as the single explanatory variable. The model is of the form
 
 $$\mathrm{logit(\hat{\pi})=\hat{\beta_0} + \hat{\beta_1}(Temp)}$$
+where $\hat{\pi}$ represents the probability of at least one O-ring failure per launch in the binary model and the probability of an individual O-ring failing in the full model.
+
 ```{r}
-beta_0_hat <- fail_model$coefficients[1]
-beta_1_hat <- fail_model$coefficients[2]
+beta_0_binary <- binary_temp$coefficients[1]
+beta_1_binary <- binary_temp$coefficients[2]
+
+beta_0_binom <- binom_temp$coefficients[1]
+beta_1_binom <- binom_temp$coefficients[2]
+
+beta_0_morton <- binom_temp_morton$coefficients[1]
+beta_1_morton <- binom_temp_morton$coefficients[2]
 ```
 
-The intercept in the model, $\beta_0$, had the value `r beta_0_hat` while the coefficient of `Temp` had the value `r beta_1_hat`. The coefficient on the `Temp` variable can be interpreted as decreasing the odds of any O-ring failures by `r exp(beta_1_hat)` with every 1°F increase in temperature and all else constant.
+In the binary model, the intercept $\hat{\beta_0}$ had the value `r beta_0_binary` while the coefficient of temperature $\hat{\beta_1}$ had the value `r beta_1_binary`. The coefficient of temperature can be interpreted as increasing the odds of any O-ring failure by `r exp(-1*beta_1_binary)` with every 1°F decrease in temperature and all else constant. Likewise, in the full model the intercept $\hat{\beta_0}$ had the value `r beta_0_binom` while the coefficient of temperature $\hat{\beta_1}$ had the value `r beta_1_binom`. In this case, for every 1°F decrease in temperature with all else constant the odds of a single O-ring failing would be increased by `r exp(-1*beta_1_binom)`.
 
-This is a key finding. It underscores the importance git status
-of atmospheric temperature on the day of the launch, and that lower temperatures would increase the odds of an O-ring failure occurring. This is supported by Dalal et al. when they state the resiliency of an O-ring is highly dependent on temperature. 
+This is a key finding. It underscores the importance of atmospheric temperature on the day of the launch, and that lower temperatures would increase the odds of an O-ring failure occurring. This is supported by Dalal et al. when they state the resiliency of an O-ring is highly dependent on temperature. 
 
-On the day of the launch the temperature was 31°F. At this point, the predicted the probability of any O-ring failure is `r exp(beta_0_hat + beta_1_hat*31 )/(1 + exp(beta_0_hat + beta_1_hat*31 ))`, with a 95 % confidence interval (LRT) as `r interval$lower` and `r interval$upper`.
+On the morning of the *Challenger*'s final launch the temperature was 36°F. At this point, the predicted the probability of at least one O-ring failure is `r round(100*exp(beta_0_binary + beta_1_binary*temp_challenger)/(1 + exp(beta_0_binary + beta_1_binary*temp_challenger)), 1)`%, with each individual O-ring having a predicted probability of failure of `r round(100*exp(beta_0_binom + beta_1_binom*temp_challenger)/(1 + exp(beta_0_binom + beta_1_binom*temp_challenger)), 1)`%. This corresponds to about four out of the six primary O-rings being expected to fail. As shown previously, the Wald, LR, and Bootstrapped 95% confidence intervals are large, ranging from only one to all six O-rings failing, due to a launch never before being attempted at such a low temperature. 
 
-Therefore, with the 95% confidence interval so high, at least one O-ring is very likely to fail under these conditions. If this was known, the launch could have been postponed for warmer weather when there was a lower probability of a failure. We can conclude that the catastrophe could have been avoided had NASA managers appropriately analyzed the data by factoring in both the successful and failed launches. 
+The original estimate by Morton Thiokol omitted all launch data when no O-ring damage was observed under the assumption that it did not have anything to offer to an analysis of O-ring damage. This reduced the number of data points from 23 to only six. More importantly, such an action makes it fundamentally impossible to understand why some O-rings fail while others don't when only considering failed O-rings and not the entire group. If this was corrected, the relationship between temperature and O-ring damage could have been learned with the available data. 
+
+Dalal et al. further went on to estimate the probability of secondary O-ring failure with additional data. It was found that given failure in a primary O-ring, a secondary O-ring had a probability of failure equal to $p = 0.286 * 0.292 \approx 8.4$%. This comes from the probability of erosion followed by the probability of blowby in a secondary O-ring, similar to what could occur in a primary O-ring. Taking this, the full model's estimate of a catastrophic failure for the *Challenger* launch would be $0.084 * 4 \approx 34$% given that only one secondary O-ring needed to fail out of the four behind the failed primary O-rings. Certain engineers within Morton Thiokol who had a similar belief and suggested this, but had their opinions dismissed. Using the model developed with the company's methods of dropping non O-ring damaged launches, the probability of catastrophe would only be estimated at `r round(100*0.084*6*exp(beta_0_morton + beta_1_morton*temp_challenger)/(1 + exp(beta_0_morton + beta_1_morton*temp_challenger)), 1)`%. Therefore, it would have been possible to predict that the launch temperature of the *Challenger* disaster was very likely to end in a catastrophic failure. 
+
+Had the launch been postponed only a few hours to reach that day's noon temperature of 66°F, the probability of an individual O-ring failure would have dropped to `r round(100*exp(beta_0_binom + beta_1_binom*66)/(1 + exp(beta_0_binom + beta_1_binom*66)), 1)`% and the expected number of O-ring failures for the launch to ~`r round(6*exp(beta_0_binom + beta_1_binom*66)/(1 + exp(beta_0_binom + beta_1_binom*66)), 1)`. At a value less than one, it would be expected that no primary O-rings failed. In this scenario, the probability of a catastrophe would only have been $0.084*0.4\approx3.4$%. Even this remains high, and had this flaw been focused on earlier then work could have proceeded to make the launch system safer and more reliable. It can be concluded that the catastrophe was avoidable had the program appropriately analyzed data by factoring in both the successful and failed launches, and that the O-ring flaw was inherent up to this point in Shuttle design. 
 
 \newpage
 
-Citation:
+Citations:
 
 [1] Dalal, Siddhartha R., et al. “Risk Analysis of the Space Shuttle: Pre-Challenger Prediction of Failure.” Journal of the American Statistical Association, vol. 84, no. 408, [American Statistical Association, Taylor & Francis, Ltd.], 1989, pp. 945–57, https://doi.org/10.2307/2290069.
 
