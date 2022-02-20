@@ -8,6 +8,7 @@ output:
 fontsize: 11pt
 geometry: margin=1in
 urlcolor: blue
+include-before: '`\newpage{}`{=latex}'
 ---
 
 \newpage
@@ -16,9 +17,9 @@ urlcolor: blue
 
 ## Summary
 
-This exercise examines the Space Shuttle *Challenger*'s 1986 disaster using the previous safety record of the Space Shuttle Program. The probability of O-ring failures at various launch temperatures are modeled to make a prediction for the conditions on the morning of the disaster. It is found that the probability of a catastrophic failure is 34%, over three times higher than when using the methods of the original estimate. The Rogers Commission, tasked with investigating the accident, noted that this underestimate occurred due to omitting launch data where no O-ring damage was found.$^{[2]}$ The original estimate procedure was used by [Morton Thiokol](https://en.wikipedia.org/wiki/Thiokol), a contractor to NASA and producer of the O-ring involved component that failed. 
+This exercise examines the Space Shuttle *Challenger*'s 1986 disaster using the previous safety record of the Space Shuttle Program. The probability of O-ring failures at various launch temperatures are modeled to make a prediction for the conditions on the morning of the disaster. It is found that the probability of a catastrophic failure is 34%, over three times higher than with the edited dataset that was originally used. The Rogers Commission, tasked with investigating the accident, noted that a catastrophe was generally underestimated due to omitting launch data where no O-ring damage was found.$^{[2]}$ This failure to understand the risk was in part the responsibility of [Morton Thiokol](https://en.wikipedia.org/wiki/Thiokol), a contractor to NASA and producer of the O-ring involved component that failed. 
 
-This work was originally completed as part of the W271 Statistical Methods for Discrete Response, Time Series, and Panel Data course in the Master of Information and Data Science program at University of California, Berkeley. The exercise in turn was based on a previous 1989 paper on the same topic, originally published in the Journal of the American Statistical Association and included in this repo as a pdf.$^{[1]}$
+This work was originally completed as part of the W271 Statistical Methods for Discrete Response, Time Series, and Panel Data course in the Master of Information and Data Science program at University of California, Berkeley. The exercise in turn was based on a previous 1989 paper on the same topic, originally published in the Journal of the American Statistical Association.$^{[1]}$
 
 ## Background
 
@@ -28,9 +29,9 @@ In the ensuing investigation, the cause of the accident was found to be O-ring f
 
 Like many other applications, the SRBs' O-rings sealed against gas to prevent it from escaping where mechanical joints connected. Every Shuttle launch required 2 SRBs, with each SRB containing 3 field-joints that used O-ring seals. For redundancy, each field-joint had both a primary and a secondary O-ring. This resulted in 6 field-joint O-rings total per SRB, or 12 field-joint O-rings total per launch. 
 
-Redundancy is needed because of the potential for an O-ring to fail. There are two mechanisms which could cause this, known as erosion and blow by. Erosion has the potential to occur during normal operation, where hot gases sealed against the O-ring gradually disintegrate it. On the SRBs, putty was added to provide a protective barrier against this mechanism. Blow by occurs when an O-ring already fails to provide a complete seal, allowing high velocity gas to move past the O-ring and damage it further. 
+Redundancy is needed because of the potential for an O-ring to fail. There are two mechanisms which could cause this, known as erosion and blow-by. Erosion has the potential to occur during normal operation, where hot gases sealed against the O-ring gradually disintegrate it. On the SRBs, putty was added to provide a protective barrier against this mechanism. Blow-by occurs when an O-ring already fails to provide a complete seal, allowing high velocity gas to move past the O-ring and damage it further. 
 
-Although the secondary O-rings were a backup should distress and failure occur in a primary O-ring, before the first ever Space Shuttle launch it was discovered that additional problems could also occur. This was due to field-joint design which sometimes caused unintended rotation among different components, including the O-rings. While the primary O-rings would engage a seal reliably even with this rotation, the secondary O-rings specifically could sometimes slip and leave permanent space for gas leakage. If this occurred during a launch where the primary O-ring failed due to the previous distresses, then it was known the result would be a "catastrophic failure".$^{[1]}$
+Although the secondary O-rings were a backup should distress and failure occur in a primary O-ring, before the first ever Space Shuttle launch additional problems were also found. This was due to field-joint design which sometimes caused unintended rotation among different components, including the O-rings. While the primary O-rings would engage a seal reliably even with this rotation, the secondary O-rings specifically could sometimes slip and leave permanent space for gas leakage. If this occurred during a launch where the primary O-ring failed due to the previous distresses, then it was known the result would be a "catastrophic failure".$^{[1]}$
 
 Being made of rubber-like material, there are a variety of conditions which may impact the ability of any O-ring to provide a complete seal and suffer distress. One which was investigated for the Space Shuttle program was temperature, where colder conditions can cause an O-ring to shrink and lose its elasticity. During the late 1970s and early 1980s, the SRB engine with the O-rings was qualified for temperatures as low as 40°F. 
 
@@ -44,6 +45,8 @@ library(gridExtra)
 library(dplyr)
 library(mcprofile)
 ```
+
+\newpage
 
 ## Exploratory Data Analysis
 
@@ -62,7 +65,9 @@ grid.table(head(d), rows = NULL)
 
 With the data loaded, it can be seen that there are `r length(d)` variables and `r nrow(d)` observations. Between these, there are `r sum(is.na(d))` missing values. In total there is a small amount of information available, which is to be expected with rare events such as Space Shuttle launches. However, it provides an opportunity to more thoroughly examine all aspects of the dataset.
 
-To begin, the meaning of each variable must be properly understood. `Flight` represents a generic index for each launch. `O.ring` represents the number of primary field-joint O-rings which experienced a "thermal distress" event for each flight. A thermal distress event was defined as when either the effects of erosion or blow by could be observed in the recovered SRBs post launch. Although every launch had 12 field-joint O-rings in total, only six of these are primary while the second six are secondary. This was to design for redundancy, even though mechanisms were found which could lead to the immediate failure of the secondary O-rings should the primary fail as mentioned in **Background**. As confirmation of the total, the variable `Number` represents the count of primary field-joint O-rings and is constant at six for all launches. `Temp` and `Pressure` represent the recorded field-joint temperature in Fahrenheit and pressure in psi respectively. `Temp` is recorded to the nearest degree, while `Pressure` is recorded to the nearest 50 psi (e.g. 50, 100, 150, etc). With a much coarser grain of pressure measurements, it may be less meaningful since less specific information is recorded.
+To begin, the meaning of each variable must be properly understood. `Flight` represents a generic index for each launch. `O.ring` represents the number of primary field-joint O-rings which experienced a "thermal distress" event for each launch. A thermal distress event was defined as when either the effects of erosion or blow-by could be observed in the recovered SRBs post launch. For the purpose of this report, these distress events will be interchangeably referred to as O-ring failures. This may generally make the analysis find a higher probability of catastrophic failure than could really have been predicted, since a full O-ring failure would only be found from erosion followed by blow-by and not erosion alone. However, since these are not differentiated in the dataset, it will be assumed all distress events include blow-by and constitute a full O-ring failure. 
+
+Although every launch had 12 field-joint O-rings in total, only six of these are primary while the second six are secondary. As confirmation of the total, the variable `Number` represents the count of primary field-joint O-rings and is constant at six for all launches. `Temp` and `Pressure` represent the recorded ambient launch temperature in Fahrenheit and field-joint pressure in psi respectively. `Temp` is recorded to the nearest degree, while `Pressure` is recorded to the nearest 50 psi (e.g. 50, 100, 150, etc). With a much coarser grain of pressure measurements, it may not be as meaningful since less specific information is recorded.
 
 Being the cause of the accident, the `O.ring` variable will be examined to start. In this analysis, unless stated otherwise "O-ring" will refer specifically to a primary field-joint O-ring.
 
@@ -70,13 +75,13 @@ Being the cause of the accident, the `O.ring` variable will be examined to start
 ggplot(d, aes(O.ring)) +
   geom_histogram(binwidth = 1, fill = "black", color='black', alpha=0.8) +
   ggtitle("Figure 1. O-Ring Distribution") +
-  xlab("Count of O-Ring Thermal Distress Events per Launch") +
+  xlab("O-Ring Failures per Launch") +
   ylab("Count")
 ```
 
-Shown above in **Figure 1**, the majority of launches had O-rings which experienced no thermal distress events. About 5 launches had a single O-ring experience thermal distress, while even fewer had two. None of the recorded launches had greater than two O-rings distress events. However, for a catastrophic failure to occur, all that was potentially needed would be a single primary O-ring failure to occur when its secondary backup had rotated and lost contact for a seal. 
+Shown above in **Figure 1**, the majority of launches had O-rings which experienced no O-ring failures. About 5 launches had a single O-ring fail, while even fewer had two. None of the recorded launches had greater than two O-rings fail. However, for a catastrophic failure to occur, all that was potentially needed would have been a single primary O-ring failure when its secondary backup had rotated and lost contact for a seal. 
 
-With the majority of launches not experiencing O-ring distress, those that experienced any distress at all can be grouped together for a more discrete analysis.
+With the majority of launches having zero recorded O-ring failures, those that experienced any can be grouped together for a more discrete analysis.
 
 ```{r}
 d$distress <- d$O.ring > 0
@@ -84,7 +89,7 @@ d$distress <- d$O.ring > 0
 grid.table(tail(d), rows = NULL)
 ```
 
-To better differentiate between these two situations, a new Boolean variable named `distress` is created which indicates whether a launch had at least one O-ring distress event or not. With two potential predictors of these failures, `Temp` and `Pressure`, it will be important to understand how they relate to the distribution of the outcome.
+To better differentiate between these two situations, a new Boolean variable named `distress` is created which indicates whether a launch had at least one O-ring failure or not. With two potential predictors of these failures, `Temp` and `Pressure`, it will be important to understand how they relate to the distribution of the outcome.
 
 ```{r, message = FALSE}
 ggplot(d, aes(factor(distress), Temp)) +
@@ -92,12 +97,12 @@ ggplot(d, aes(factor(distress), Temp)) +
   scale_fill_brewer(palette = "Set1", direction = -1) +
   theme(legend.position = "none") +
   geom_jitter() +
-  ggtitle("Figure 2. Temperature vs. O-Ring Distress Event") +
-  xlab("O-Ring Distress Event") + 
+  ggtitle("Figure 2. Temperature vs. O-Ring Failure") +
+  xlab("O-Ring Failure") + 
   ylab("Temperature (°F)")
 ```
 
-Demonstrated in **Figure 2**, O-Ring distress events generally occurred at lower launch temperatures. In fact, with so few total observations, it can be seen that over half of the launches with O-ring distress were at lower temperatures than the coldest launch with no O-ring distress There is a single outlier that is notable, however, where a distress event occurred at a launch temperature of ~75°F. This temperature would be greater than average even among launches which experienced no distress. Note that because of this point, along with generally having a wider distribution, there is greater temperature variance among launches which had distress events compared to those which did not. 
+Demonstrated in **Figure 2**, the presence of at least one O-Ring failure was generally observed at lower launch temperatures. In fact, with so few total observations, over half of the launches with at least one O-ring failure were colder than *all* launches with no failures. There is a single outlier that is notable, however, where at least one failure occurred at a launch temperature of ~75°F. This temperature would be greater than average even among the group where no failures were observed. Related to this point, there is greater variance in temperature for launches which had at least one failure compared to those which did not. 
 
 The other environmental variable in the data set, `Pressure`, may also be examined to see if insightful relationships emerge. 
 
@@ -106,16 +111,16 @@ ggplot(data = d, aes(Temp, O.ring, color = Pressure)) +
   geom_point() +
   ggtitle("Figure 3. O-Ring Failures vs. Environmental Conditions") +
   xlab("Temperature (°F)") +
-  ylab("O-Ring Distress Events") +
+  ylab("O-Ring Failures") +
   labs(size = "Pressure (psi)") +
   scale_color_gradient(low = "blue", high = "red") +
   scale_y_continuous(breaks = c(0, 1, 2)) +
   scale_x_continuous(breaks = c(50, 60, 70, 80))
 ```
 
-**Figure 3** shows that generally the launches with a greater number of O-ring distress events occurred at lower temperatures and higher pressures. This also fits with conceptual information known about the O-rings, such as lower temperatures causing them to shrink in size and provide a less complete seal against gases. Higher pressures could then also cause more erosion/blowby from a greater amount of gas in the same space in the system. While all of the distress events did occur at the highest pressure measurement of 200 psi, the general trend does not seem as strong as with temperature. For example, 200 psi pressure measurement was also the most common value of this variable generally. However, temperatures around the midpoint of the range ~65-75°F also had lower pressures, which may have helped them avoid any distress events.
+**Figure 3** shows that generally the launches with a greater number of O-ring failures occurred at lower temperatures and higher pressures. This also fits with conceptual information known about the O-rings, such as lower temperatures causing them to shrink in size and provide a less complete seal against gases. Higher pressures could then also cause more erosion/blow-by from a greater amount of gas in the same space in the system. While all of the failures occurred at the highest pressure measurement of 200 psi, the general trend does not seem as strong as with temperature. For example, the 200 psi pressure measurement was also the most common value of this variable generally. However, temperatures around the midpoint of the range ~65-75°F also had lower pressures, which may have helped them avoid any failures.
 
-The correlation between these variables can also be computed numerically for a more thorough understanding. Although pressure is binned into multiples of 50 psi, resembling a categorical or ordinal variable, the ratio of one pressure to another is still meaningful. For example, 200 psi is known to be four times as much pressure as 50 psi. A pressure of zero psi is also meaningful, meeting the definition for a ratio variable. Since theoretically a pressure can take on any value, even if only multiples of 50 are recorded, it will still be treated as a continuous variable. The count of O-rings which experienced distress meets the same definition of a ratio variable but is by nature discrete and not continuous. For example, 1.5 O-rings cannot experience distress. Therefore, Spearman's rank correlation coefficient will be used.
+The correlation between these variables can also be computed numerically for a more thorough understanding. Although pressure is binned into multiples of 50 psi, resembling an ordinal variable, the ratio of one pressure to another is still meaningful. For example, 200 psi is known to be four times as much pressure as 50 psi. A pressure of zero psi is also meaningful, meeting the definition of a ratio variable. Since theoretically a pressure can take on any value, even if only multiples of 50 are recorded, it will still be treated as a continuous variable. The count of O-rings which failed meets the same definition of a ratio variable but is by nature discrete and not continuous. For example, 1.5 O-rings cannot fail for a given launch. Therefore, the Spearman's rank correlation coefficient will be used.
 
 ```{r, warning=FALSE}
 cat("Table 1. Correlation of Numerical Variables\n")
@@ -123,9 +128,11 @@ cat("Table 1. Correlation of Numerical Variables\n")
 cor(d[ , !c("Flight","Number","distress")], method = "spearman")
 ```
 
-**Table 1** shows the correlation between the three numerical variables which varied in the data set over the course of the launches, being `Temp`, `Pressure`, and `O.ring`. As suspected in **Figure 3**, pressure had a positive correlation with O-ring distress incidents. This supports the previous observation that higher pressures were associated with both launches with and without distress events, but lower pressures almost always were on flights without any distress events. 
+**Table 1** shows the correlation between the three numerical variables which varied in the data set over the course of the launches, being `Temp`, `Pressure`, and `O.ring`. As suspected in **Figure 3**, pressure had a positive correlation with O-ring failures. This supports the previous observation that higher pressures were associated with both launches with and without failures, but lower pressures always were on launches without any failures. 
 
-Temperature had a stronger negative correlation with O-ring distress events. This continues to follow the trend shown in **Figures 2** and **3** where flights which experienced any distress were generally at colder temperatures. Finally, we can also see that temperature and pressure have a much smaller and slightly positive correlation with each other. This is in agreement with physical science, where gas enclosed in fixed volume will grow to higher pressures if the temperature is increased. Since the function of the O-ring is to provide a seal, i.e. a fixed volume, it would be reasonable that there is a slight positive correlation between the two.
+Temperature had a stronger negative correlation with O-ring distress events. This continues to follow the trend shown in **Figures 2** and **3** where launches which experienced failures were generally at colder temperatures. Finally, it can also be seen that temperature and pressure have a much smaller and slightly positive correlation with each other. This is in agreement with physical science, where gas enclosed in fixed volume will grow to higher pressures if the temperature is increased. Since the function of the O-ring is to provide a seal, i.e. a fixed boundary, it would be reasonable that there is a slight positive correlation between the two.
+
+\newpage
 
 ## Modeling
 
@@ -135,32 +142,32 @@ Temperature had a stronger negative correlation with O-ring distress events. Thi
 d <- data.frame(d)
 ```
 
-With the given context, there are different potential approaches to estimate the relationship between the environmental variables and O-ring distress. Given that each O-ring is discrete, a Poisson or Binomial distribution could be used depending on the scenario and modeling goals. The Poisson distribution describes processes which, among other things, occur over an interval at a constant average rate. This could be used to model the expected count of O-rings which fail for a series of Space Shuttle launches. However, the focus on the average over time is not particularly useful to estimate failure in a specific future launch. The Binomial distribution, on the other hand, describes processes which have a sequence of binary events, such as success or failure of multiple O-rings within a single Shuttle launch. This would be much more fitting for predicting a probability of failure on a single launch in the future, such as the *Challenger* at the start of its final mission. Because of this, only the Binomial distribution will be used in this investigation.
+With the given context, there are different possible approaches to estimate the relationship between the environmental variables and O-ring failure. Given that each O-ring is discrete, a Poisson or Binomial distribution could be used depending on the modeling goals. The Poisson distribution describes processes which, among other things, occur over an interval at a constant average rate. This could be used to model the expected count of O-rings which fail for a series of Space Shuttle launches. However, the focus on the average over time is not particularly useful to estimate failure in a specific future launch. The Binomial distribution, on the other hand, describes processes which have a sequence of binary events. This fits well to the success or failure of multiple O-rings within a single Shuttle launch. It also would be more fitting for predicting the probability of failure on a single launch in the future, such as the *Challenger* at the start of its final mission. Because of this, only the Binomial distribution will be used in this investigation.
 
-For both the Poisson and Binomial distributions, however, an assumption of independence is required. This would require that each Space Shuttle launch is independent and identically distributed (IID) compared to all others. In general this should be true, although there may be minor reasons why this is violated. For example, over time Shuttle technology or launch procedures may have been improved based on prior experience. This would be equivalent to a distributional change over time. In addition, part of the reason SRBs were recovered were not just for observing O-ring damage, but also for refurbishment and potential re-use in later launches. Having sets of launches with the same SRBs could result in sets of correlated observations that are different from other flights. It could also be expected that re-used SRBs could in general cause greater O-ring distress than those being newly used. This would be a notable violation since it can involve the observed outcome of O-ring damage along with its relationship to environmental conditions. With either a Poisson or Binomial distribution, it must be assumed to be negligent. In the future, knowledge of which SRBs were re-used for which launches could be incorporated into modeling for a more accurate estimate.
+For both the Poisson and Binomial distributions, an assumption of independence is required. As part of this, it would be necessary that each Space Shuttle launch is independent and identically distributed (IID) compared to all others. In general this should be true, although there may be minor reasons why this is violated. For example, over time Shuttle technology or launch procedures may have been improved based on prior experience. This would be equivalent to a distributional change over time. In addition, part of the reason SRBs were recovered was not just for observing O-ring damage, but also for refurbishment and potential re-use in later launches. Having sets of launches with the same SRBs could result in correlated observations that bias any resulting estimates. It could also be expected that re-used SRBs in general cause greater O-ring damage than those which are new. This would likewise cause bias because it involves the observed outcome of O-ring failure. With either a Poisson or Binomial distribution, these must all be assumed to be negligent. In the future, knowledge of which SRBs were re-used for which launches could be incorporated into modeling for a more accurate estimate.
 
-These modeling options also require that in addition to each Shuttle launch being IID, each of the six O-rings for any given flight must be IID as well. If the O-rings were not independent, the damage of a given O-ring would not only be a function of the environmental variables but also of the damage of other O-rings. Consequently, there would not be just one relationship between the O-ring damage and the environment, but multiple relationships depending on which O-ring was under consideration. 
+These modeling options also require that in addition to each Shuttle launch being IID, each of the six O-rings for any given flight must be IID as well. If the O-rings were not independent, the failure of a given O-ring would not only be a function of the environmental variables but also of the failure of other O-rings. Consequently, there would not be just one relationship between the O-ring failure and the environment, but multiple relationships depending on which O-ring was under consideration. Similarly, if they were not identically distributed, then different O-rings could have their own relationships to the environmental variables rather than a single relationship for all O-rings.
 
-Just like with the IID Shuttle launches, this is avoided with the assumption of independence however it may not be completely valid. For example, the six O-rings are spread out across two SRBs for each launch. It could be expected that there are small differences from between specific SRBs with respect to the stress the O-rings experience. For example, if an O-ring in one SRB had minor manufacturing differences that put more stress on its O-rings then these observations would be correlated. The three O-rings in the other SRB, however, may have their own correlation based on its own unique qualities. Therefore, in reality there is likely some relationship between the O-rings within a single SRB that is ignored for the sake of the model.
+Just like with the IID Shuttle launches, this is avoided with the assumption of independence. However, it may not be completely valid. For example, the six O-rings are spread out across two SRBs for each launch. It might be that there are small differences between specific SRBs with respect to the stress the O-rings experience. In particular, one might have minor manufacturing differences that puts more stress on its O-rings compared to the other. This would result in a non-identical distribution, with the same complicating effects previously mentioned. Therefore, it is likely that every O-ring is not perfectly IID but this must be ignored for the sake of the model.
 
 ```{r}
 # Determine fraction of O-rings that failed for each launch
 d$O.ring.fraction <- d$O.ring / d$Number
 ```
 
-With the assumption of independence, two different uses of the Binomial distribution will be investigated. The first will model *n* = 6 IID O-rings for flight, each with an identical probability *p* of experiencing distress. The set of O-rings within each launch and the series of all Shuttle launches will then make up a Bernoulli process. This will be referred to as the "full" outcome throughout the rest of this report. The second will investigate only the probability of a launch experiencing *any* O-ring distress by use of the binary `distress` variable created during the EDA. This will model the reduced *n* = 1 Bernoulli trial of whether at least one O-ring was distressed on a launch, with a single probability *p* of this occurring. This is a special case of the Binomial distribution known as the Bernoulli distribution, and will be referred to as the "binary" outcome throughout this report.
+With the assumption of independence, two different uses of the Binomial distribution will be investigated. The first will model *n* = 6 IID O-rings for every launch, where each O-ring has an identical probability *p* of failure. The set of O-rings within each Shuttle launch and the series of all launches will then make up a Bernoulli process. This will be referred to as the "full" outcome throughout this report. The second will investigate only the probability of a launch experiencing *any* O-ring failures by use of the binary `distress` variable created during the EDA. This will model the reduced *n* = 1 Bernoulli trial of whether at least one O-ring failed on a given launch, with a single probability *p* of this occurring. This is a special case of the Binomial distribution known as the Bernoulli distribution, and will be referred to as the "binary" outcome throughout this report.
 
-An advantage of the former is that it uses all available information in the dataset, potentially estimating a more accurate relationship between O-ring failure and environmental conditions. It also can provide a more useful prediction for the outcome of the *Challenger* disaster, since any design-flaw failure in a secondary O-ring when the primary is distressed would cause a catastrophe. Having an estimate of a specific number of primary O-rings which fail would then be proportional to the probability of the catastrophe. The use of the binary `distress` outcome, however, only estimates if at least one O-ring will fail without regard to how many. Still, because of its simpler nature it can potentially be more precise when the number of observations is so low. Therefore, the full model will be used to provide a primary estimate of the disaster's probability, with the binary model used as a spot-check against its results.
+An advantage of the former is that it uses all available information in the dataset, potentially estimating a more accurate relationship between O-ring failure and environmental conditions. It also can provide a more useful prediction for the outcome of the *Challenger* disaster, since any design-flaw in a secondary O-ring when the primary fails would cause a catastrophe. Having an estimate of a specific number of primary O-rings which fail would then be proportional to the probability of the catastrophe. The use of the binary `distress` outcome, however, only estimates if at least one O-ring will fail without regard to how many. Still, because of its simpler nature it can potentially be more precise when the number of observations is so low. Therefore, the full outcome will be used to provide a primary estimate of the disaster's probability, with the binary outcome used as a spot-check against its results.
 
 There are two explanatory variables of interest, temperature and pressure. To test whether either of these are significant, a series of three models will be created.
 
 $$logit(\pi) = \beta_0$$
 The first, shown above, will only include an intercept and serve as the null hypothesis where neither temperature nor pressure have a relationship with O-ring distress. This equivalent to $\beta_{T} = \beta_{P} = 0$. 
 
-As common with Binomial distributions, a logit link function is used to relate the dependent and independent variables. The logit is defined as $logit(\pi) = ln(\frac{\pi}{1 - \pi})$ where $\pi$ is the probability of the outcome of interest. In the full model, this is the probability of failure of a single O-ring while in the binary model it is the probability of failure in at least one O-ring in a launch.
+As common with Binomial distributions, a logit link function will be used to relate the dependent and independent variables. The logit is defined as $logit(\pi) = ln(\frac{\pi}{1 - \pi})$ where $\pi$ is the probability of the outcome of interest. In the full model, this is the probability of failure of an individual O-ring. In the binary model, it is the probability of failure of at least one O-ring in a launch.
 
 $$logit(\pi) = \beta_0 + \beta_{T}*T$$
-The second, shown above, will include temperature as the sole independent variable denoted by $T$. This is motivated by Morton Thiokol's pre-launch investigation of O-ring condition deteriorating at lower temperatures using the same dataset. Later, it will be shown how their mistakes in statistical modeling lead to an underestimate of the probability of catastrophe. 
+The second, shown above, will include temperature as the sole independent variable denoted by $T$. This is motivated by Morton Thiokol's pre-launch investigation of O-ring condition deteriorating at lower temperatures using the same dataset. Later, it will be shown how their mistakes in treatment of the data would lead to an underestimate of the probability of catastrophe. 
 
 $$logit(\pi) = \beta_0 + \beta_{T}*T + \beta_{P}*P$$
 Finally, the pressure $P$ will be included along with $T$ in the third model to see if both environmental conditions are also significantly related to O-ring distress. 
@@ -191,11 +198,11 @@ binom_both <- glm(formula = O.ring.fraction ~ Temp + Pressure, data = d,
                   family = binomial(link = logit), weights = Number)
 ```
 
-The same set of three models will be used for both the full and binary outcome variables, shown above. Note that for the full models, instead of creating *n* = 6 unique data points for the O-rings of each launch, the fraction of O-ring failures in a single launch was used as the dependent variable. When paired with the weights of each observation, which is constant at six O-rings for all launches, this produces the same point estimate of model coefficients. 
+The same set of three models will be used for both the full and binary outcome variables, shown above. Note that for the full models, instead of creating *n* = 6 unique data points for the O-rings of each launch, the fraction of O-ring failures in a single launch was used as the dependent variable. When paired with the weights of each observation, which is constant at six O-rings for all launches, this produces identical model estimates. 
 
 A likelihood ratio test (LRT) will be used to determine whether a model associated with an alternative hypothesis is a significant improvement over the null hypothesis model. If the first alternative hypothesis is significant, i.e. involving only $T$, then the second alternative hypothesis including both $T$ and $P$ will be assessed against it. 
 
-LRTs compare the likelihood of the alternative hypothesis model against the null hypothesis model. In general, an LRT is mathematically expressed as:
+LRTs compare the likelihood of the alternative hypothesis model against the null hypothesis model. In general, for a binary outcome an LRT is mathematically expressed as:
 
 $$-2log(\Lambda) = -2log( \frac{L(\hat{\mathbf{\beta}}^{(0)} | y_1, \dots, y_n)}{L(\hat{\mathbf{\beta}}^{(a)} | y_1, \dots, y_n)} = -2\sum y_i log\left( \frac{\hat{\pi}_i^{(0)}}{\hat{\pi}_i^{(a)}} \right) + (1 - y_i ) log\left( \frac{1- \hat{\pi}_i^{(0)}}{1- \hat{\pi}_i^{(a)}} \right)$$
 Where:
@@ -227,13 +234,13 @@ binary_pressure_test <- anova(binary_temp, binary_both, test = "LRT")
 binom_pressure_test <- anova(binom_temp, binom_both, test = "LRT")
 ```
 
-With the first pair of alternative hypotheses being failed to be rejected, they now will take the position of the null hypothesis for comparison against including pressure. For these LRTs, p-values of `r round(binary_pressure_test[["Pr(>Chi)"]][2], 4)` and `r round(binom_pressure_test[["Pr(>Chi)"]][2], 4)` are found for the binary and full models respectively. Unlike the previous borderline case, both of these are well above the Bonferroni corrected significance level as well as the original $\alpha$. Therefore, the null hypothesis that pressure does not have a significant relationship with O-ring condition is failed to be rejected. Moving forward, the temperature-only models will be used for further investigation and prediction.
+With the first pair of alternative hypotheses being failed to be rejected, they now will take the position of the null hypothesis for comparison against including pressure. For these LRTs, p-values of `r round(binary_pressure_test[["Pr(>Chi)"]][2], 4)` and `r round(binom_pressure_test[["Pr(>Chi)"]][2], 4)` are found for the binary and full models respectively. Unlike the previous borderline case, both of these are well above the Bonferroni corrected significance level as well as the original $\alpha$. Therefore, the null hypothesis that pressure does not have a significant relationship with O-ring failure is failed to be rejected. Moving forward, the temperature-only models will be used for further investigation and prediction.
 
-Before use of the models for specific tasks, the fitted parameters within the model should also be examined. In this case, $\beta_T$ may be interpreted for the relationship between temperature and O-ring failure. When doing so with any link function other than the identity link, changes in an independent variable must account for additional transformation(s) to find the change in the dependent variable. 
+Before this, the fitted parameters within the model may also be examined. In this case, $\beta_T$ may be interpreted for the relationship between temperature and O-ring failure. When doing so with any link function other than the identity link, changes in an independent variable must account for additional transformation(s) to find the change in the dependent variable. 
 
 $$OR = \frac{Odds_{T + c}}{Odds_T} = \frac{\pi_{T+c}}{1-\pi_{T+c}}*\frac{1-\pi_T}{\pi_T}= \frac{exp(\beta_0 + \beta_T*(T + c))}{exp(\beta_0 + \beta_T*T)} = exp(\beta_T * c)$$
 
-With a logit link function, changes in an independent variable are most commonly interpreted through the odds ratio (OR), with a derivation for this context shown above. Specifically, the example shown describes the OR as a function of a *c* °F increase in temperature. Previously, the coefficient of temperature $\beta_T$ was estimated to be about `r round(binary_temp[["coefficients"]][["Temp"]], 3)` in the binary model and `r round(binom_temp[["coefficients"]][["Temp"]], 3)` in the full model. Both are negative, implying that generally as temperature increases then the estimated odds of O-ring failure decreases. Conversely, as temperature decreases then the estimated odds of O-ring failure increases. 
+With a logit link function, changes in an independent variable are most commonly interpreted through the odds ratio (OR), with a derivation for this model shown above. Specifically, the example shown describes the OR as a function of a *c* °F increase in temperature. Previously, the coefficient of temperature $\beta_T$ was estimated to be about `r round(binary_temp[["coefficients"]][["Temp"]], 3)` in the binary model and `r round(binom_temp[["coefficients"]][["Temp"]], 3)` in the full model. Both are negative, implying that generally as temperature increases then the estimated odds of O-ring failure decreases. Conversely, as temperature decreases then the estimated odds of O-ring failure increases. 
 
 ```{r}
 c <- -10
@@ -241,9 +248,7 @@ binary_or <- exp(c*binary_temp[["coefficients"]][["Temp"]])
 binom_or <- exp(c*binom_temp[["coefficients"]][["Temp"]])
 ```
 
-For a 10°F decrease in temperature, the OR would be about `r round(binary_or, 1)` in the binary model and `r round(binom_or, 1)` in the full model. Put into context, this implies that with a 10°F lower temperature the odds of *any* O-ring failure increases by `r round(binary_or, 1)` and the odds of a specific O-ring failure increases by `r round(binom_or, 1)`. This change is irrespective of the starting temperature, and as the change in temperature grows more negative then the odds of O-ring failure will continue to increase.
-
-For future plotting, visualization of confidence intervals will sometimes be included. While the previous hypothesis tests were LRTs, when this is done the Wald confidence intervals will be used instead.
+For a 10°F decrease in temperature, the OR would be about `r round(binary_or, 1)` in the binary model and `r round(binom_or, 1)` in the full model. Put into context, this implies that with a 10°F lower temperature the odds of *any* O-ring failure increases by `r round(binary_or, 1)` and the odds of an individual O-ring failure increases by `r round(binom_or, 1)`. This change is irrespective of the starting temperature, and as the change in temperature grows more negative then the odds of O-ring failure will continue to increase.
 
 ```{r, warning = FALSE}
 # create sequence of temperatures to show on plot
@@ -304,16 +309,16 @@ ggplot() +
 
 ```
 
-**Figure 4** shows the probability of O-ring failure from both models over a range of temperatures. The Wald confidence intervals with $\alpha$ = 0.05 are shown as dotted lines for each model. Previous Shuttle launches are also included depending whether they did or did not have at least one O-ring failure, which is the dependent variable in the binary model. Finally, the vertical line represents the launch temperature of the *Challenger* disaster of 36°F.
+**Figure 4** shows the probability of O-ring failure from both models over a range of temperatures. The Wald confidence intervals with $\alpha$ = 0.05 are shown as dotted lines for each model. Previous Shuttle launches are also included depending on whether they did or did not have at least one O-ring failure, which is the dependent variable in the binary model. Finally, the vertical line represents the launch temperature of the *Challenger* disaster of 36°F.
 
-As described previously the binary case represents the probability that *any* of the six O-rings will fail during launch, while the full case represents the probability of a single O-ring within the six failing. Shown earlier with the OR, a decrease in temperature generally increases the probability of O-ring failure in both models. This is visualized here as the probabilities from both models increase at changing rates as temperature decreases. The binary model has a larger increase in probability at moderate temperatures than the full model, which is intuitive as it only tracks whether at least one out of six O-rings will fail rather than the probability of a single specific O-ring. 
+As described previously the binary case represents the probability that *any* of the six O-rings will fail during launch, while the full case represents the probability of an individual O-ring within the six failing. Shown earlier with the OR, a decrease in temperature increases the probability of O-ring failure in both models. Throughout the entire range of temperatures, the binary model has a greater probability than the full model. This is intuitive as it only tracks the probability of whether at least one out of the six O-rings per launch will fail, rather than the probability of failure in a specific individual O-ring. 
 
 At the launch temperature of the *Challenger*, the binary model predicts there is a near guarantee that at least one O-ring will fail. The full model likewise predicts a high probability of each individual O-ring failing at nearly 75%. With the O-rings being assumed IID as required for the Binomial distribution, the expected number of O-ring failures on a single launch is then given by:
 
 $$E[Y] = n * p = 6 * \hat{\pi}(T)$$
-where *n* = 6 from the six IID O-rings on each launch and *p* = $\hat{\pi}(T)$ is the estimated probability of an individual O-ring failing at a specific temperature as given by the full model. Again, by design only the full model can estimate how many O-rings on a given launch may fail as the binary model is only useful for understanding if *at least* one O-ring will fail, without regard to the total number.
+where *n* = 6 from the six IID O-rings on each launch and *p* = $\hat{\pi}(T)$ is the estimated probability of an individual O-ring failing at a specific temperature as given by the full model. Again, by design only the full model can estimate how many O-rings on a given launch may fail. The binary model is only useful for understanding if *at least* one O-ring will fail, without regard to the total number.
 
-The key feature of Morton Thiokol's original analysis was that all launches which had zero O-ring failures were omitted.$^{[1]}$ This was justified by assuming they had nothing to offer to an understanding why O-rings may fail, or if temperature could be related. However, to falsify the claim that temperature is related to O-ring failure, both successes and failures of O-rings must be considered. Attempting to do so only based on examples of O-rings which failed, or conversely O-rings which did not fail, is impossible. Especially when a causal effect is suspected, an analysis which attempts to do so does not meet fundamental criteria of science. 
+A key feature of Morton Thiokol's original analysis was that all launches which had zero O-ring failures were omitted.$^{[1]}$ This was justified by assuming they had nothing to offer to an understanding why O-rings may fail, or if temperature could be related. However, to falsify the claim that temperature is related to O-ring failure, both successes and failures of O-rings must be considered. Attempting to do so only based on examples of O-rings which failed, or conversely O-rings which did not fail, is impossible. Especially when a causal effect is suspected, an analysis which attempts to do so does not meet fundamental criteria of science. 
 
 ```{r}
 d_morton <- d[d$O.ring > 0, ]
@@ -332,7 +337,7 @@ binom_df_morton <- data.frame(temp = temps$Temp, pi = binom_pis_morton,
 binom_color_morton <- "red"
 ```
 
-An identical subset of the launch data as used by Morton Thiokol is created above. With this, the same structure of the full model can be fit using to determine how it may impact analysis. 
+An identical subset of the launch data as used by Morton Thiokol is created above. With this, the same structure of the full model can be fit to determine how it may impact analysis. 
 
 ```{r, warning = FALSE}
 mode <- function(v) {
@@ -369,7 +374,7 @@ ggplot() +
             color = binom_color_morton, linetype = "dotted") + 
   geom_line(data = binom_df_morton, aes(x = temp, y = num_failed_upr),
             color = binom_color_morton, linetype = "dotted") +
-  ggtitle("Figure 5. Expected Number of O-Ring Incidents by Temperature") + 
+  ggtitle("Figure 5. Expected Number of O-Ring Failures by Temperature") + 
   ylab("Number of O-Ring Failures per Launch") + xlab("Temperature (°F)") + 
   geom_point(data = d, mapping = aes(x = Temp, y = O.ring), shape = 17) +
   geom_vline(xintercept = temp_challenger, linetype = "solid") +
@@ -387,11 +392,13 @@ Most notably, using only the subset data implies that temperature is not related
 
 On the other hand, the full model with all data tracks previous Shuttle launches well. The only point which does not fit this curve is the observation with two O-ring failures at a temperature of about ~75°F. Even though this point is far from the predictions of the model, it does not appear to have skewed its fit. 
 
-Importantly, the model with all data predicts that at about four out of the six primary O-rings would fail at the launch temperature of the *Challenger*. This is an key result, as no previous launch had greater than two O-ring failures observed. As mentioned earlier, these six primary O-rings were intended to be redundant with six secondary O-rings. However, early in the Shuttle program it was known that a phenomena specific to the secondary O-rings could occur which rendered them useless at the start of each launch. If this happened at the same time as a primary O-ring failed, then it was already known that the result would be a catastrophe. Therefore, with at least four primary O-rings expected to fail at launch, the *Challenger* disaster would only have been averted if all four of the secondary O-rings to these did not also start the launch non-functional. 
+Importantly, the model with all data predicts that about four out of the six primary O-rings would fail at the launch temperature of the *Challenger*. This is an key result, as no previous launch had greater than two O-ring failures observed. As mentioned earlier, these six primary O-rings were intended to be redundant with six secondary O-rings. However, early in the Shuttle program it was known that a phenomena specific to the secondary O-rings could occur which rendered them useless at the start of each launch. If this happened at the same time as a primary O-ring failed, then it was already known that the result would be a catastrophe. Therefore, with four primary O-rings expected to fail at launch, the *Challenger* disaster would only have been averted if all four of the secondary O-rings to these did not also start the launch non-functional. 
+
+\newpage
 
 ## Error Estimation
 
-Still, this estimate must be qualified by the large confidence interval ranging from one to all six primary O-rings failing. In both **Figures 4** and **5**, the width of the Wald confidence intervals generally increases as temperature decreases in the full model. In the binary model of **Figure 4**, however, the confidence interval grows and then shrinks as temperatures decreases. In fact, at the launch temperature of 36°F the width is extremely small in the binary model. This represents high confidence that at least one O-ring will fail. However, this is likely an example of a "zero-width" interval being estimated due to failing to meet the Wald interval assumptions for a Binomial problem. The width of the confidence interval ranging to below zero and greater than one is a similar a demonstration of its failure in the current context. 
+Still, this estimate must be qualified by the large confidence interval ranging from one to all six primary O-rings failing. In both **Figures 4** and **5**, the width of the Wald confidence intervals generally increases as temperature decreases in the full model. In the binary model of **Figure 4**, however, the confidence interval shrinks as temperatures decreases extremely. In fact, at the launch temperature of 36°F the width is extremely small in the binary model. This represents high confidence that at least one O-ring will fail. However, this is likely an example of a "zero-width" interval being estimated due to failing to meet the Wald interval assumptions for a Binomial problem. The width of the confidence interval ranging to below zero and greater than one is a similar a demonstration of its failure in the current context. 
 
 ```{r}
 binwidth <- 0.1
@@ -401,7 +408,7 @@ ggplot() +
     binwidth = binwidth, center = binwidth/2, alpha=0.5, show.legend = TRUE) + 
   geom_histogram(data = binom_df, mapping = aes(x = pi, fill = binom_color),
     binwidth = binwidth, center = binwidth/2, alpha=0.5, show.legend = TRUE) + 
-  ggtitle("Figure 5. Distribution of Predicted Probabilities") +
+  ggtitle("Figure 6. Distribution of Predicted Probabilities") +
   xlab(expression(hat(pi))) + ylab("Count") +
   scale_x_continuous(breaks = seq(0, 1, binwidth)) + ylim(0,30) +
   scale_fill_identity(name = "Model",
@@ -410,11 +417,11 @@ ggplot() +
                       guide = "legend")
 ```
 
-The validity of the Wald intervals can be examined via **Figure 5**. Specifically, the Wald interval assumes the outcome variable follows a normal distribution and has a large sample size. Earlier in the exercise, however, a Binomial distribution was assumed for a more appropriate and useful model. While Binomial distributions resemble normal distributions when *n* is large and *p* is near 0.5, these circumstances are not usually met and lead to "chaotic coverage" of the Wald interval.$^{[3]}$ Also as noted earlier, Space Shuttle launches are rare events and the overall size of the dataset is small at less than thirty observations. 
+The validity of the Wald intervals can be examined via **Figure 6**. Specifically, the Wald interval assumes the outcome variable follows a Normal distribution and has a large sample size. Earlier in the exercise, however, a Binomial distribution was assumed for a more appropriate and useful model. While Binomial distributions resemble normal distributions when *n* is large and *p* is near 0.5, these circumstances are not usually met and lead to "chaotic coverage" of the Wald interval.$^{[3]}$ Also as noted earlier, Space Shuttle launches are rare events and the overall size of the dataset is small at less than thirty observations. 
 
-The effect of these differences can be seen in **Figure 5** where $\hat{\pi}$ has fewer observations towards the center of its range, with a greater number on its edges. This is true for both the binary and full models. However, this is the opposite of a normal distribution where the median value is the most often observed. With all of these differences, the Wald intervals should not be considered precise estimates of the standard error.
+The effect of these differences can be seen in **Figure 6** where $\hat{\pi}$ has fewer observations towards the center of its range, with a greater number on its edges. This is true for both the binary and full models. However, this is the opposite of a Normal distribution where the median value is the most often observed. With all of these differences, the Wald intervals should not be considered precise estimates of the standard error.
 
-As done with the previous hypothesis tests, the profile LR confidence interval can be constructed instead of the Wald. Unlike the Wald, the LR confidence interval assumes a $\chi^2$ distribution in the outcome. This is much more easily approximated by the Binomial distribution the data was assumed to follow for modeling, as found when comparing a $\chi^2$ distribution to **Figure 5**.
+As done with the previous hypothesis tests, the profile LR confidence interval can be constructed instead of the Wald. Unlike the Wald, the LR confidence interval assumes a $\chi^2$ distribution in the outcome. This is much more easily approximated by the Binomial distribution the data was assumed to follow for modeling, as found when comparing a $\chi^2$ distribution to **Figure 6**.
 
 ```{r}
 beta_0 <- binom_temp$coefficients[1]
@@ -444,12 +451,12 @@ wald_upper_pi <- exp(wald_upper_logit)/(1 + exp(wald_upper_logit))
 
 At 36°F, the probability of an individual O-ring failing has a 95% LR confidence interval of `r round(100*interval$lower, 1)`% and `r round(100*interval$upper, 1)`%. The Wald confidence interval under the same conditions is `r round(100*wald_lower_pi, 1)`% and `r round(100*wald_upper_pi, 1)`%. While a small difference at this temperature, this demonstrates that the LR interval is more conservative than the Wald and should be preferred.
 
-Dalal et al., the authors of the publication this exercise is based on, did not use Wald or LR methods to estimate error. Instead, they used a parametric bootstrap. Bootstrapping involves randomly varying a quantity of interest for many iterations, where a new outcome is calculated for each iteration. After many iterations, a distribution of possible results is generated. By the central limit theorem, this distribution is approximately normal. Once constructed, the distribution's variance can then be used as an estimate of uncertainty in the outcome as a function of the varied quantity.
+Dalal et al., the authors of the publication this exercise is based on, did not use Wald or LR methods to estimate error. Instead, they used a parametric bootstrap. Bootstrapping involves randomly varying a quantity of interest for many iterations, where a new outcome is calculated for each iteration. After many iterations, a distribution of possible results is generated. By the central limit theorem, this distribution is approximately Normal. Once constructed, the distribution's variance can then be used as an estimate of uncertainty in the outcome as a function of the varied quantity.
 
-Because one of the key features of this dataset is the low number of observations, at 23 total, it was assumed that this would be a primary contributor to error in a model's predictions. From this, a procedure was designed where each iteration would:
-- Sample the original dataset with replacement to create a new synthetic dataset of equal size (23 observations)
-- Fit a model with identical structure to the new dataset
-- Make a prediction using the new model at a temperature of interest
+Because one of the key features of this dataset is the low number of observations, at 23 total, it may be assumed that this is a primary contributor to error in a model's predictions. From this, a procedure was designed where each iteration would:
+* Sample the original dataset with replacement to create a new synthetic dataset of equal size (23 observations)
+* Fit a model with identical structure to the new dataset
+* Make a prediction using the new model at a temperature of interest
 
 After a large number of iterations, the variance in the predictions would then be used to construct the confidence interval at the given temperature. In this context, an accurate confidence interval for the temperature of the *Challenger*'s final launch at 36°F is desired. Because no prior observation was from such a low temperature, this also represents an estimate of the out-of-sample uncertainty. For comparison, the procedure is also repeated at a temperature of 70°F to demonstrate an in-sample estimate.
 
@@ -501,7 +508,7 @@ plt_c <- ggplot(data = df_bootstrap_challenger) +
   geom_histogram(binwidth = binwidth, fill = "blue", color = "blue", 
                  center = binwidth/2, alpha = 0.3) +
   geom_vline(xintercept = ci_challenger, color = 'darkorange') + 
-  labs(title = "Figure 6a. 36°F") +
+  labs(title = "Figure 7a. 36°F") +
   ylab("") + xlab("") +
   scale_x_continuous(breaks = seq(0, 1, binwidth)) +
   theme(plot.title = element_text(size = 7),
@@ -512,7 +519,7 @@ plt_is <- ggplot(data = df_bootstrap_in_sample) +
   geom_histogram(binwidth = binwidth/5, fill = "purple", color = "purple", 
                  center = binwidth/(5*2), alpha = 0.3) +
   geom_vline(xintercept = ci_in_sample, color = 'darkorange') + 
-  labs(title = "Figure 6b. 70°F") +
+  labs(title = "Figure 7b. 70°F") +
   ylab("") + xlab("") +
   scale_x_continuous(breaks = seq(0, 1, binwidth/5)) +
   theme(plot.title = element_text(size = 7),
@@ -520,12 +527,14 @@ plt_is <- ggplot(data = df_bootstrap_in_sample) +
 
 grid.arrange(plt_c, plt_is, nrow = 1,
              top = textGrob(
-               label = "Figure 6. Bootstrapped Probabilities of Failure"),
+               label = "Figure 7. Bootstrapped Probabilities of Failure"),
              bottom = textGrob(label = expression(pi)),
              left = textGrob(label = "Count", rot = 90))
 ```
 
-**Figure 6** shows the bootstrapped probabilities of failure for a single O-ring at 36°F and 70°F. The confidence intervals determined from the distribution are also shown in orange for each temperature. The "parametric" nature of the bootstrap can be observed as both resemble a normal distribution, although the boundaries at 0% and 100% add a slight skew. However, these are both much more similar to normal distribution than what is shown in **Figure 5**, suggesting the bootstrap is more reliable than the Wald intervals even though both have similar boundary problems. 
+**Figure 7** shows the bootstrapped probabilities of failure for a single O-ring at 36°F and 70°F. The confidence intervals determined from the distribution are also shown in orange for each temperature. The "parametric" nature of the bootstrap can be observed as both resemble a Normal distribution, although the boundaries at 0% and 100% add a slight skew. However, these are both much more similar to a Normal distribution than what is shown in **Figure 6**, suggesting the bootstrap is more reliable than the Wald intervals even though both have similar boundary problems. 
+
+\newpage
 
 ## Linear Regression
 
@@ -533,16 +542,16 @@ While a Binomial distribution was assumed for the outcome and used with a logit 
 
 ```{r}
 linear_model <- glm(O.ring.fraction ~ Temp, data = d, 
-                    family = gaussian(), weights = Number)
+                    family = gaussian(link = "identity"), weights = Number)
 
 summary(linear_model)
 ```
 
-Shown above, the linear model also finds that temperature is significant for the presence of a O-ring distress event. Like the previous models there is an inverse relationship between the two variables, where the likelihood of an O-ring failure increases as the temperature decreases. Specifically, with all else constant, decreasing the temperature by 10°F would increase the probability of an individual O-ring failure by ~7.9%.
+Shown above, the linear model also finds that temperature is significant for the presence of an O-ring failure. Like the previous models there is an inverse relationship between the two variables, where the likelihood of an O-ring failure increases as the temperature decreases. Specifically, with all else constant, decreasing the temperature by 10°F would increase the probability of an individual O-ring failure by ~7.9%.
 
-Even though a similar result is found, this model should not be used instead of the Binomial model. Chiefly, this is because the linear model does not have bounds on the output so that sometimes a probability greater than one or less than zero may be predicted. Although previous confidence intervals were found to have this problem, this was due to the calculation of the standard error and not the model itself. In this linear model, a probability of one is reached at about `r round((1-coef(linear_model)["(Intercept)"])/coef(linear_model)["Temp"], 2)`°F while a probability of zero is reached at about `r round((0-coef(linear_model)["(Intercept)"])/coef(linear_model)["Temp"], 2)`°F. Given that there were recorded launches both above and below these temperatures, this is a very undesirable property of the model.
+Even though a similar result is found, this model should not be used instead of the Binomial model. Chiefly, this is because the linear model does not have bounds on the output so that sometimes a probability greater than one or less than zero may be predicted. Although previous confidence intervals were found to have this problem, this was due to the calculation of the standard error and not the model itself. In this linear model, a probability of one is reached at about `r round((1-coef(linear_model)["(Intercept)"])/coef(linear_model)["Temp"], 2)`°F while a probability of zero is reached at about `r round((0-coef(linear_model)["(Intercept)"])/coef(linear_model)["Temp"], 2)`°F. Given that there were recorded launches above this maximum temperature, and one at 75°F had O-ring failures, this is a very undesirable property of the model.
 
-In addition, the linear model assumes homoscedasticity. This means that the variance in the model's residuals should be constant both over the range of the output as well as the domain of its inputs. 
+In addition, the linear model assumes homoscedasticity. This means that the variance in the model's residuals should be constant both over the range of the dependent variable as well as the domain of the independent variables. 
 
 ```{r, message = FALSE}
 linear_model %>%
@@ -551,19 +560,21 @@ linear_model %>%
   geom_point() + 
   stat_smooth(color="red", se=FALSE) +
   labs(
-    title = "Figure 7. Predicted Probabilities vs. Standardized Residuals",
+    title = "Figure 8. Predicted Probabilities vs. Standardized Residuals",
     x = "Predicted Values",
     y = "Standardized Residuals")
 ```
 
-Shown in **Figure 7**, the standardized residuals are not constant over the range of the output variable in the model. This does not meet the homoscedasticity assumption, because the output variable is itself a function of the input variables. This result was expected, however, as it can be shown that the variance in a random variable from a Binomial distribution is a function of itself, or $Var(\pi) \propto \pi*(1-\pi)$. It can be further seen in **Figure 7** that there is a general upward trend as $\pi \to 0.5$, which follows from the variance relationship. Given that the homoscedasticity assumption is not met, there is further evidence of preferring the logistic model to the linear regression.
+Shown in **Figure 8**, the standardized residuals are not constant over the range of the dependent variable in the model, failing to meet the homoscedasticity assumption. This result was expected, however, as it can be shown that the variance in a random variable from a Binomial distribution is a function of itself, or $Var(\pi) \propto \pi*(1-\pi)$. It can be further seen in **Figure 8** that there is a general upward trend as $\pi \to 0.5$, which follows from the variance relationship. Given that the homoscedasticity assumption is not met, there is further evidence of preferring the Binomial model to the linear regression.
 
-## Summary
+\newpage
 
-The final model is the logistic regression which uses temperature as the single explanatory variable. The model is of the form
+## Conclusion
+
+The final model is the Binomial model which uses temperature as the single explanatory variable. The model is of the form
 
 $$\mathrm{logit(\hat{\pi})=\hat{\beta_0} + \hat{\beta_1}(Temp)}$$
-where $\hat{\pi}$ represents the probability of at least one O-ring failure per launch in the binary model and the probability of an individual O-ring failing in the full model.
+where $\hat{\pi}$ represents the probability of at least one O-ring failure per launch with the binary outcome and the probability of an individual O-ring failure with the full outcome.
 
 ```{r}
 beta_0_binary <- binary_temp$coefficients[1]
@@ -576,17 +587,23 @@ beta_0_morton <- binom_temp_morton$coefficients[1]
 beta_1_morton <- binom_temp_morton$coefficients[2]
 ```
 
-In the binary model, the intercept $\hat{\beta_0}$ had the value `r beta_0_binary` while the coefficient of temperature $\hat{\beta_1}$ had the value `r beta_1_binary`. The coefficient of temperature can be interpreted as increasing the odds of any O-ring failure by `r exp(-1*beta_1_binary)` with every 1°F decrease in temperature and all else constant. Likewise, in the full model the intercept $\hat{\beta_0}$ had the value `r beta_0_binom` while the coefficient of temperature $\hat{\beta_1}$ had the value `r beta_1_binom`. In this case, for every 1°F decrease in temperature with all else constant the odds of a single O-ring failing would be increased by `r exp(-1*beta_1_binom)`.
+In the binary model, the intercept $\hat{\beta_0}$ had a value of about `r round(beta_0_binary, 1)` while the coefficient of temperature $\hat{\beta_1}$ had a value of about `r round(beta_1_binary, 1)`. The coefficient of temperature can be interpreted as increasing the odds of any O-ring failure by about `r round(exp(-1*beta_1_binary), 1)` with every 1°F decrease in temperature and all else constant. Likewise, in the full model the intercept $\hat{\beta_0}$ had a value of about `r round(beta_0_binom, 1)` while the coefficient of temperature $\hat{\beta_1}$ had a value of about `r round(beta_1_binom, 1)`. In this case, for every 1°F decrease in temperature with all else constant the odds of a single O-ring failing would be increased by about `r round(exp(-1*beta_1_binom), 1)`.
 
 This is a key finding. It underscores the importance of atmospheric temperature on the day of the launch, and that lower temperatures would increase the odds of an O-ring failure occurring. This is supported by Dalal et al. when they state the resiliency of an O-ring is highly dependent on temperature. 
 
 On the morning of the *Challenger*'s final launch the temperature was 36°F. At this point, the predicted the probability of at least one O-ring failure is `r round(100*exp(beta_0_binary + beta_1_binary*temp_challenger)/(1 + exp(beta_0_binary + beta_1_binary*temp_challenger)), 1)`%, with each individual O-ring having a predicted probability of failure of `r round(100*exp(beta_0_binom + beta_1_binom*temp_challenger)/(1 + exp(beta_0_binom + beta_1_binom*temp_challenger)), 1)`%. This corresponds to about four out of the six primary O-rings being expected to fail. As shown previously, the Wald, LR, and Bootstrapped 95% confidence intervals are large, ranging from only one to all six O-rings failing, due to a launch never before being attempted at such a low temperature. 
 
-The original estimate by Morton Thiokol omitted all launch data when no O-ring damage was observed under the assumption that it did not have anything to offer to an analysis of O-ring damage. This reduced the number of data points from 23 to only six. More importantly, such an action makes it fundamentally impossible to understand why some O-rings fail while others don't when only considering failed O-rings and not the entire group. If this was corrected, the relationship between temperature and O-ring damage could have been learned with the available data. 
+The original analysis by Morton Thiokol omitted all launch data when no O-ring failure was observed under the assumption that it did not have anything to offer for understanding O-ring temperature effects. This reduced the number of data points from 23 to only six. More importantly, such an action makes it fundamentally impossible to understand why some O-rings fail while others don't when only considering failed O-rings and not the entire group. If this was corrected, the relationship between temperature and O-ring damage could have been found with the available data. 
 
-Dalal et al. further went on to estimate the probability of secondary O-ring failure with additional data. It was found that given failure in a primary O-ring, a secondary O-ring had a probability of failure equal to $p = 0.286 * 0.292 \approx 8.4$%. This comes from the probability of erosion followed by the probability of blowby in a secondary O-ring, similar to what could occur in a primary O-ring. Taking this, the full model's estimate of a catastrophic failure for the *Challenger* launch would be $0.084 * 4 \approx 34$% given that only one secondary O-ring needed to fail out of the four behind the failed primary O-rings. Certain engineers within Morton Thiokol who had a similar belief and suggested this, but had their opinions dismissed. Using the model developed with the company's methods of dropping non O-ring damaged launches, the probability of catastrophe would only be estimated at `r round(100*0.084*6*exp(beta_0_morton + beta_1_morton*temp_challenger)/(1 + exp(beta_0_morton + beta_1_morton*temp_challenger)), 1)`%. Therefore, it would have been possible to predict that the launch temperature of the *Challenger* disaster was very likely to end in a catastrophic failure. 
+Dalal et al. further went on to estimate the probability of secondary O-ring failure with additional data. It was found that given failure in a primary O-ring, a secondary O-ring had a Bayesian probability of failure equal to $p \approx 0.286 * 0.292 \approx 8.4$%. This comes from the conditional probability of erosion followed by the conditional probability of blow-by in a secondary O-ring, similar to what could occur in a primary O-ring. Taking this, the full model's estimate of a catastrophic failure for the *Challenger* launch would be $0.084 * 4 \approx 34$%. This is given that only one secondary O-ring needed to fail out of the four behind the failed primary O-rings. 
 
-Had the launch been postponed only a few hours to reach that day's noon temperature of 66°F, the probability of an individual O-ring failure would have dropped to `r round(100*exp(beta_0_binom + beta_1_binom*66)/(1 + exp(beta_0_binom + beta_1_binom*66)), 1)`% and the expected number of O-ring failures for the launch to ~`r round(6*exp(beta_0_binom + beta_1_binom*66)/(1 + exp(beta_0_binom + beta_1_binom*66)), 1)`. At a value less than one, it would be expected that no primary O-rings failed. In this scenario, the probability of a catastrophe would only have been $0.084*0.4\approx3.4$%. Even this remains high, and had this flaw been focused on earlier then work could have proceeded to make the launch system safer and more reliable. It can be concluded that the catastrophe was avoidable had the program appropriately analyzed data by factoring in both the successful and failed launches, and that the O-ring flaw was inherent up to this point in Shuttle design. 
+Certain engineers within Morton Thiokol had a similar intuition and suggested this relationship was important, but had their opinions dismissed. Using the model developed with the company's method of dropping non O-ring damaged launches, the probability of catastrophe would only be estimated at `r round(100*0.084*6*exp(beta_0_morton + beta_1_morton*temp_challenger)/(1 + exp(beta_0_morton + beta_1_morton*temp_challenger)), 1)`%. Even this does not have a strong dependence on temperature, as shown in **Figure 5**, and would be nearly constant for any launch at any temperature. Had this statistical mistake been corrected, it would have been possible to predict that the launch temperature of the *Challenger* disaster was very likely to end in a catastrophic failure compared to previous launches. 
+
+If the launch was postponed to a temperature of 60°F, the average for Cape Canaveral in January 2022, the probability of an individual O-ring failure would have dropped to `r round(100*exp(beta_0_binom + beta_1_binom*60)/(1 + exp(beta_0_binom + beta_1_binom*60)), 1)`% and the expected number of O-ring failures for the launch to ~`r round(6*exp(beta_0_binom + beta_1_binom*60)/(1 + exp(beta_0_binom + beta_1_binom*60)), 1)`. At a value less than one, it would be expected that no primary O-rings failed. In this scenario, the probability of a catastrophe would only have been $0.084*0.8\approx6.7$%.
+
+Even at a lower launch temperature, these estimated results have the potential to be considered too high of an acceptable risk. Had this flaw been focused on earlier, then work could have proceeded to make the launch system safer and more reliable. Ultimately, this catastrophe was avoidable had the program appropriately analyzed data by factoring in both the successful and failed O-ring launches, and that the O-ring flaw was inherent up to this point in Shuttle design. 
+
+All of these estimates are qualified by the fact that the original dataset only indicated the number of "O-ring distress events" without specifics as to whether erosion or both erosion and blow-by were observed. The latter may be considered a full O-ring failure, while the former is not. By assuming that the indicated O-ring distress events were all failures, these estimates are excessive in their prediction of catastrophe. Specific information on whether primary O-rings were observed with erosion or both erosion and blow-by would result in a more accurate estimate. In addition, analyzing a past event in hindsight may make the proper course of action obvious. However, the simple statistical methods and common criteria for evaluating them shown here should have been the proper approach no matter the time or context. 
 
 \newpage
 
