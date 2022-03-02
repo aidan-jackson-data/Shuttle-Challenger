@@ -497,7 +497,7 @@ ci_challenger <- mean_challenger + qnorm(p = c(alpha/2, 1-alpha/2))*se_challenge
 ci_in_sample <- mean_in_sample + qnorm(p = c(alpha/2, 1-alpha/2))*se_in_sample
 ```
 
-Similar to before, the probability of an individual O-ring failing at the launch temperature of the *Challenger* was estimated via parametric bootstrap to be `r round(100*mean_challenger, 1)`%. The bootstrapped 95% confidence interval was `r round(100*ci_challenger[1], 1)`% and `r round(100*ci_challenger[2], 1)`%. At `r temp_in_sample`°F, the same method estimated the probability at `r round(100*mean_in_sample, 1)`% with a 95% confidence interval of `r round(100*ci_in_sample[1], 1)`% and `r round(100*ci_in_sample[2], 1)`%. Note that in both of these intervals, bounds extend beyond the limit of 0% and 100% similar to the Wald interval. Although bootstrapping has become popular in recent decades with the rise of computation power and simple application to many contexts, certain issues can still be encountered depending on the use case. 
+Similar to before, the probability of an individual O-ring failing at the launch temperature of the *Challenger* was estimated via parametric bootstrap to be `r round(100*mean_challenger, 1)`%. The bootstrapped 95% confidence interval was `r round(100*ci_challenger[1], 1)`% and `r round(100*ci_challenger[2], 1)`%. At `r temp_in_sample`°F, the same method estimated the probability at `r round(100*mean_in_sample, 1)`% with a 95% confidence interval of `r round(100*ci_in_sample[1], 1)`% and `r round(100*ci_in_sample[2], 1)`%. Note that in both of these intervals, bounds can extend beyond the limit of 0% and 100% similar to the Wald interval. Although bootstrapping has become popular in recent decades with the rise of computation power and simple application to many contexts, certain issues such as this can still be encountered depending on the use case. 
 
 ```{r}
 df_bootstrap_challenger <- data.frame("pi" = vector_pi_challenger)
@@ -565,7 +565,7 @@ linear_model %>%
     y = "Standardized Residuals")
 ```
 
-Shown in **Figure 8**, the standardized residuals are not constant over the range of the dependent variable in the model, failing to meet the homoscedasticity assumption. This result was expected, however, as it can be shown that the variance in a random variable from a Binomial distribution is a function of itself, or $Var(\pi) \propto \pi*(1-\pi)$. It can be further seen in **Figure 8** that there is a general upward trend as $\pi \to 0.5$, which follows from the variance relationship. Given that the homoscedasticity assumption is not met, there is further evidence of preferring the Binomial model to the linear regression.
+Shown in **Figure 8**, the standardized residuals are not constant over the range of the dependent variable in the model, failing to meet the homoscedasticity assumption. This result was expected, however, as it can be shown that the variance in a random variable from a Binomial distribution is a function of itself, or $Var(\pi) \propto \pi*(1-\pi)$. It can be further seen in **Figure 8** that there is a general upward trend as $\pi \to 0.5$, which follows from the variance relationship. Given that the homoscedasticity assumption is not met, there is further reason to prefer the Binomial model to the linear regression.
 
 \newpage
 
@@ -614,8 +614,3 @@ Citations:
 [2] Presidential Commission on the Space Shuttle *Challenger* Accident (1986), *Report of the Presidential Commission on the Space Shuttle Challenger Accident* (Vols. 1 & 2), Washington, D.C.: Author. 
 
 [3] Lawrence D. Brown, T. Tony Cai, Anirban DasGupta "Interval Estimation for a Binomial Proportion," Statistical Science, Statist. Sci. 16(2), 101-133, (May 2001)
-
-
-
-
-
